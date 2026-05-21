@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" height="100%" overflow="visible" preserveAspectRatio="none" style="display: block;" viewBox="0 0 1322.77 868.067" width="100%">
+<path d="M100 0.5H1222.77C1277.72 0.5 1322.27 45.0477 1322.27 100V768.066C1322.27 823.019 1277.72 867.566 1222.77 867.566H100C45.0477 867.566 0.5 823.019 0.5 768.066V100C0.50002 45.477 44.3543 1.19642 98.7139 0.507812L100 0.5Z" data-figma-bg-blur-radius="20" fill="var(--fill-0, #DAD4FF)" fill-opacity="0.2" id="Rectangle 1823" stroke="url(#paint0_linear_0_1180)"/>
+<defs>
+<clipPath id="bgblur_0_0_1180_clip_path" transform="translate(20 20)">
+      <path d="M100 0.5H1222.77C1277.72 0.5 1322.27 45.0477 1322.27 100V768.066C1322.27 823.019 1277.72 867.566 1222.77 867.566H100C45.0477 867.566 0.5 823.019 0.5 768.066V100C0.50002 45.477 44.3543 1.19642 98.7139 0.507812L100 0.5Z"/>
+</clipPath>
+    <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_0_1180" x1="594.239" x2="594.239" y1="0" y2="237.64">
+<stop stop-color="#EDE8FF"/>
+<stop offset="1" stop-color="#CDBEFF" stop-opacity="0.2"/>
+</linearGradient>
+</defs>
+</svg>

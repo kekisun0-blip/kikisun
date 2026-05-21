@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" height="100%" overflow="visible" preserveAspectRatio="none" style="display: block;" viewBox="0 0 579 314.635" width="100%">
+<path d="M40 0.5H539C560.815 0.500004 578.5 18.1848 578.5 40V231.516C578.5 253.331 560.815 271.016 539 271.016H475.989L476.008 271.533L477.373 308.419C477.55 313.197 471.966 315.909 468.319 312.816L419.164 271.134L419.024 271.016H40C18.1849 271.016 0.500251 253.331 0.5 231.516V40C0.5 18.1848 18.1848 0.5 40 0.5Z" data-figma-bg-blur-radius="20" fill="var(--fill-0, #DAD4FF)" fill-opacity="0.1" id="Rectangle 1798" stroke="url(#paint0_linear_0_1191)"/>
+<defs>
+<clipPath id="bgblur_0_0_1191_clip_path" transform="translate(20 20)">
+      <path d="M40 0.5H539C560.815 0.500004 578.5 18.1848 578.5 40V231.516C578.5 253.331 560.815 271.016 539 271.016H475.989L476.008 271.533L477.373 308.419C477.55 313.197 471.966 315.909 468.319 312.816L419.164 271.134L419.024 271.016H40C18.1849 271.016 0.500251 253.331 0.5 231.516V40C0.5 18.1848 18.1848 0.5 40 0.5Z"/>
+</clipPath>
+    <linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_0_1191" x1="251.719" x2="251.719" y1="0" y2="69.5675">
+<stop stop-color="#CDBEFF"/>
+<stop offset="1" stop-color="#CDBEFF" stop-opacity="0.2"/>
+</linearGradient>
+</defs>
+</svg>

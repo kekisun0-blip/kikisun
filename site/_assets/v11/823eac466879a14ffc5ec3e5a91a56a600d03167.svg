@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" height="100%" overflow="visible" preserveAspectRatio="none" style="display: block;" viewBox="0 0 1588 302" width="100%">
+<ellipse cx="794" cy="151" fill="url(#paint0_linear_0_1220)" id="Ellipse 261" rx="794" ry="151"/>
+<defs>
+<linearGradient gradientUnits="userSpaceOnUse" id="paint0_linear_0_1220" x1="794" x2="794" y1="215.123" y2="302">
+<stop offset="0.0356269" stop-color="#9074FF" stop-opacity="0"/>
+<stop offset="0.348044" stop-color="#9074FF" stop-opacity="0.2"/>
+<stop offset="0.670223" stop-color="#9074FF" stop-opacity="0.51"/>
+<stop offset="0.854789" stop-color="#9074FF"/>
+<stop offset="1" stop-color="#D2D8FF"/>
+</linearGradient>
+</defs>
+</svg>

@@ -69,17 +69,17 @@ node mirror.mjs
 
 > `mirror.mjs` 会覆盖 `site/` 下已有文件，并重新注入 `_custom` 脚本引用。自定义逻辑主要在 `site/_custom/`，更新前建议备份该目录。
 
-## 部署说明
+## 部署到 kikisun.site
 
-本项目为 **Node 静态服务**，适合：
+**完整步骤见 [DEPLOY.md](./DEPLOY.md)**（GitHub Pages + 自定义域名，替换旧站）。
 
-- 本地预览 / 作品集演示
-- 部署到支持 Node 的平台（Railway、Render、VPS 等）
+要点：
 
-若部署到纯静态托管（GitHub Pages、Vercel Static），需：
+1. 把**完整**静态资源放进 `site/`（不依赖旧站在线镜像）
+2. `git push` → GitHub Actions 自动发布
+3. 在 GitHub Pages 绑定 `kikisun.site` 并配置 DNS
 
-1. 预先跑完 `mirror.mjs` 补全所有资源，或
-2. 接受部分资源仍走上游代理（需 CORS / 反向代理配置）
+本地预览仍可用 `npm start`（`server.mjs`）。
 
 ## 许可与版权
 

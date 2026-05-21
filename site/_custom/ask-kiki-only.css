@@ -416,6 +416,8 @@ body.kiki-chat-open { overflow: hidden; }
   align-items: center !important;
   justify-content: flex-start !important;
   column-gap: 12px;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 .kiki-nav-row[data-kiki-nav-primary="1"]::after {
   content: "";
@@ -427,9 +429,15 @@ body.kiki-chat-open { overflow: hidden; }
   background: rgba(0, 0, 0, 0.12);
   pointer-events: none;
 }
+/* Homepage: brand pushes About/Resume to the right */
 .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-brand {
   margin-right: auto !important;
   min-width: 0;
+}
+/* Inner pages: brand sits right after the switch, no auto margin needed */
+.kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-inner-brand {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
 }
 .kiki-site-nav-right {
   margin-left: auto !important;

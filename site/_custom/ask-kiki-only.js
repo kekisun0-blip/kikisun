@@ -311,11 +311,16 @@
     if (row.closest("#kiki-chat-root")) return -1;
     if (row.querySelector(".kiki-chat-trigger, .kiki-chat-panel")) return -1;
     var rect = row.getBoundingClientRect();
-    if (rect.width < window.innerWidth * 0.4) return -1;
-    if (rect.height < 26 || rect.height > 160) return -1;
-    if (rect.top < -40 || rect.top > 180) return -1;
+    var isProj = /^\/project(-\d+)?$/.test(location.pathname || "");
+    // Project pages may have wider or differently-positioned nav bars
+    var maxTop = isProj ? 300 : 180;
+    var minW = isProj ? 0.25 : 0.4;
+    if (rect.width < window.innerWidth * minW) return -1;
+    if (rect.height < 26 || rect.height > 200) return -1;
+    if (rect.top < -40 || rect.top > maxTop) return -1;
     var style = window.getComputedStyle(row);
-    if (style.display !== "flex" && style.display !== "grid") return -1;
+    var disp = style.display || "";
+    if (!disp || disp === "none" || disp === "inline") return -1;
 
     var links = Array.from(row.querySelectorAll("a, [role='link']"));
     if (!links.length) return -1;
@@ -445,13 +450,16 @@
       if (!row || row.nodeType !== 1) return;
       if (row.closest("#kiki-chat-root")) return;
       var style = window.getComputedStyle(row);
-      if (style.display !== "flex" && style.display !== "grid") return;
+      // Accept flex, grid, or block (some Figma pages use block-level nav containers)
+      var disp = style.display || "";
+      if (!disp || disp === "none" || disp === "inline") return;
       var rect = row.getBoundingClientRect();
-      if (rect.top < -30 || rect.top > 180) return;
-      if (rect.height < 24 || rect.height > 160) return;
-      if (rect.width < 240) return;
+      // Wider top tolerance for project pages (nav can be inside a sticky wrapper)
+      if (rect.top < -30 || rect.top > 300) return;
+      if (rect.height < 24 || rect.height > 200) return;
+      if (rect.width < 200) return;
       var links = Array.from(row.querySelectorAll("a, [role='link']"));
-      if (!links.length || links.length > 40) return;
+      if (!links.length || links.length > 80) return;
       var hasAbout = false, hasResume = false, hasPortfolio = false;
       for (var i = 0; i < links.length; i++) {
         var txt = (links[i].innerText || links[i].textContent || "").trim();
@@ -459,16 +467,20 @@
         if (/^(resume|简历)$/i.test(txt)) hasResume = true;
         if (/^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) hasPortfolio = true;
       }
+      if (!hasPortfolio) return;
       var score = Math.round(rect.width) - Math.round(Math.max(0, rect.top) * 2);
-      if (hasAbout && hasResume && hasPortfolio) {
+      if (hasAbout && hasResume) {
         if (!bestFull || score > bestFull.score) bestFull = { el: row, score: score };
-      } else if (hasPortfolio) {
-        // Project / inner pages: brand-only nav row is still valid.
+      } else {
         if (!bestBrand || score > bestBrand.score) bestBrand = { el: row, score: score };
       }
     });
-    if (bestFull) return bestFull.el;
-    return bestBrand ? bestBrand.el : null;
+    // On project pages prefer any match; on homepage prefer full nav
+    if (bestFull && bestBrand) {
+      var isProj = /^\/project(-\d+)?$/.test(location.pathname || "");
+      return isProj ? bestBrand.el : bestFull.el;
+    }
+    return (bestFull || bestBrand) ? (bestFull || bestBrand).el : null;
   }
 
   function findRowDirectChild(row, node) {
@@ -556,8 +568,13 @@
     var aboutNode = aboutLink ? getDirectOrSelf(row, aboutLink) : null;
     var resumeNode = resumeLink ? getDirectOrSelf(row, resumeLink) : null;
 
-    // Homepage / main nav path: full About + Resume present → place switch BEFORE About.
-    if (aboutLink && resumeLink && portfolioLink && aboutNode && resumeNode) {
+    var isInnerPage = /^\/project(-\d+)?$/.test(location.pathname || "");
+
+    // Homepage path: About + Resume + Portfolio all present AND we are NOT on a project detail page.
+    // On project pages we ALWAYS use the inner-page path (switch at far left) regardless of nav content,
+    // because some project pages render the full global nav (About+Resume) but still need the
+    // language toggle at the leftmost position to match /project.
+    if (!isInnerPage && aboutLink && resumeLink && portfolioLink && aboutNode && resumeNode) {
       var sharedNavHost = aboutNode === brandNode || resumeNode === brandNode;
       if (!sharedNavHost) {
         aboutNode.classList.add("kiki-site-nav-right");
@@ -584,12 +601,15 @@
       return;
     }
 
-    // Project / inner page fallback: only the brand is in the row → append switch at the END.
-    if (switchWrap.parentElement !== row) {
-      row.appendChild(switchWrap);
-    } else if (row.lastElementChild !== switchWrap) {
-      row.appendChild(switchWrap);
+    // Project / inner page path (also fallback for any page without full About+Resume nav):
+    // Layout: [EN | 中文]  [kiki Portfolio]  (switch at far left, brand immediately after).
+    var insertBeforeNode = brandNode && brandNode.parentElement === row
+      ? brandNode
+      : (row.firstElementChild || null);
+    if (switchWrap.parentElement !== row || row.firstElementChild !== switchWrap) {
+      row.insertBefore(switchWrap, insertBeforeNode);
     }
+    if (brandNode) brandNode.classList.add("kiki-nav-inner-brand");
   }
 
   function normalizeDetachedSiteSwitchPlacement() {
@@ -1462,6 +1482,117 @@
     "ai mode",
     "smart energy"
   ];
+
+  /* ── SenseLink JCV custom TOC ── */
+  // "sensemercury" only appears in project-4 (SenseLink); project-7 (SenseThunder)
+  // also has "machine management" / "temperature measurement" text in its Other-Projects
+  // footer, so those terms must NOT be used as SenseLink markers.
+  var SENSELINK_PAGE_MARKERS = [
+    "sensemercury",
+    "jcv sensemercury"
+  ];
+  var SENSELINK_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "Project Overview",
+      labelZh: "项目概览",
+      terms: ["senselink jcv", "machine management", "temperature", "overview", "background"]
+    },
+    {
+      labelEn: "JCV SenseMercury",
+      labelZh: "SenseMercury 平台",
+      terms: ["jcv sensemercury", "sensemercury"]
+    },
+    {
+      labelEn: "JCV SenseThunder",
+      labelZh: "SenseThunder 模块",
+      terms: ["jcv sensethunder", "sensethunder"]
+    }
+  ];
+
+  /* ── SenseThunder JCV custom TOC ── */
+  var SENSETHUNDER_PAGE_MARKERS = [
+    "physical product",
+    "control panel",
+    "display content design"
+  ];
+  var SENSETHUNDER_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "Product Overview",
+      labelZh: "产品概览",
+      terms: ["sensethunder jcv", "physical product", "control panel", "display"]
+    },
+    {
+      labelEn: "User Persona",
+      labelZh: "用户画像",
+      terms: ["user persona", "persona", "用户画像"]
+    },
+    {
+      labelEn: "User Research",
+      labelZh: "用户研究",
+      terms: ["user research", "research", "summary and report", "thunder air", "用户研究"]
+    },
+    {
+      labelEn: "Usability Testing",
+      labelZh: "可用性测试",
+      terms: ["user test", "sus", "feedback", "usability", "testing", "可用性"]
+    },
+    {
+      labelEn: "UI Design",
+      labelZh: "界面设计",
+      terms: ["ui design", "design outcome", "out of the box", "unpack", "assembly", "界面"]
+    }
+  ];
+
+  /* ── Decathlon custom TOC ── */
+  var DECATHLON_PAGE_MARKERS = [
+    "decathlon dpcp",
+    "decathlon",
+    "dpcp",
+    "global supply chain",
+    "supply chain automation"
+  ];
+  var DECATHLON_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "DPCP 3Y Mission",
+      labelZh: "DPCP 三年愿景",
+      terms: ["dpcp 3y mission", "3y mission", "dpcp mission", "mission", "3year", "3 year"]
+    },
+    {
+      labelEn: "Pain Points",
+      labelZh: "痛点分析",
+      terms: ["pain points", "pain point", "painpoints", "痛点", "problem"]
+    },
+    {
+      labelEn: "UX Strategy",
+      labelZh: "UX 策略",
+      terms: ["ux strategy", "strategy", "策略", "方向"]
+    },
+    {
+      labelEn: "Business Process Canvas",
+      labelZh: "业务流程画布",
+      terms: ["business process canvas", "process canvas", "bpc", "business process", "流程画布", "流程"]
+    },
+    {
+      labelEn: "Business Module System",
+      labelZh: "业务模块系统",
+      terms: ["business module system", "bms", "module system", "business module", "模块系统", "模块"]
+    },
+    {
+      labelEn: "Vitamin Play",
+      labelZh: "Vitamin 玩法",
+      terms: ["vitamin play", "vitamin", "维生素"]
+    },
+    {
+      labelEn: "Cockpit",
+      labelZh: "驾驶舱视图",
+      terms: ["project content -cockpit", "cockpit", "content -cockpit", "驾驶舱"]
+    },
+    {
+      labelEn: "Portal",
+      labelZh: "门户视图",
+      terms: ["project content -portal", "portal", "content -portal", "门户"]
+    }
+  ];
   var CUSTOM_METHOD_TOC_ITEMS = [
     {
       labelZh: "市场分析",
@@ -1516,6 +1647,40 @@
     return false;
   }
 
+  function isSenseLinkJCVPage() {
+    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
+    var snapshot = getProjectPageTextSnapshot();
+    if (!snapshot) return false;
+    for (var i = 0; i < SENSELINK_PAGE_MARKERS.length; i++) {
+      if (snapshot.indexOf(SENSELINK_PAGE_MARKERS[i]) >= 0) return true;
+    }
+    return false;
+  }
+
+  function isSenseThunderJCVPage() {
+    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
+    if (isSenseLinkJCVPage()) return false; // SenseLink takes priority
+    var snapshot = getProjectPageTextSnapshot();
+    if (!snapshot) return false;
+    for (var i = 0; i < SENSETHUNDER_PAGE_MARKERS.length; i++) {
+      if (snapshot.indexOf(SENSETHUNDER_PAGE_MARKERS[i]) >= 0) return true;
+    }
+    return false;
+  }
+
+  function isDecathlonProjectPage() {
+    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
+    // JCV pages also contain Decathlon text in their "Other Projects" section —
+    // detect JCV first so Decathlon does not false-fire on those pages.
+    if (isSenseLinkJCVPage() || isSenseThunderJCVPage()) return false;
+    var snapshot = getProjectPageTextSnapshot();
+    if (!snapshot) return false;
+    for (var i = 0; i < DECATHLON_PAGE_MARKERS.length; i++) {
+      if (snapshot.indexOf(DECATHLON_PAGE_MARKERS[i]) >= 0) return true;
+    }
+    return false;
+  }
+
   function getCustomTocLabel(item) {
     var lang = getSiteLang();
     if (lang === "zh") return item.labelZh || item.labelEn || "";
@@ -1563,25 +1728,27 @@
   }
 
   function findCustomMethodologyAnchors() {
-    if (!isSolplanetProjectPage()) return [];
+    var isSenseLink = isSenseLinkJCVPage();
+    var isSenseThunder = !isSenseLink && isSenseThunderJCVPage();
+    var isDecathlon = !isSenseLink && !isSenseThunder && isDecathlonProjectPage();
+    var isSolplanet = !isSenseLink && !isSenseThunder && !isDecathlon && isSolplanetProjectPage();
+    if (!isSenseLink && !isSenseThunder && !isSolplanet && !isDecathlon) return [];
+
+    var tocItems = isSenseLink ? SENSELINK_CUSTOM_TOC_ITEMS
+      : isSenseThunder ? SENSETHUNDER_CUSTOM_TOC_ITEMS
+      : isDecathlon ? DECATHLON_CUSTOM_TOC_ITEMS
+      : CUSTOM_METHOD_TOC_ITEMS;
     var candidates = collectProjectSectionCandidates(24);
     if (!candidates.length) candidates = collectProjectSectionCandidates(16);
     if (!candidates.length) return [];
 
-    var assigned = new Array(CUSTOM_METHOD_TOC_ITEMS.length).fill(null);
+    var assigned = new Array(tocItems.length).fill(null);
     var cursor = 0;
-    for (var i = 0; i < CUSTOM_METHOD_TOC_ITEMS.length; i++) {
+    for (var i = 0; i < tocItems.length; i++) {
       var best = null;
       for (var j = cursor; j < candidates.length; j++) {
         var current = candidates[j];
-        var score = matchCustomSectionScore(current.text, CUSTOM_METHOD_TOC_ITEMS[i].terms);
-        if (!score) continue;
-        if (/市场分析|Market Analysis/i.test(CUSTOM_METHOD_TOC_ITEMS[i].labelZh + " " + CUSTOM_METHOD_TOC_ITEMS[i].labelEn) && /\bdesign\b|设计/.test(normalizeTocText(current.text).toLowerCase())) {
-          score -= 1;
-        }
-        if (/设计洞察|Design Insights/i.test(CUSTOM_METHOD_TOC_ITEMS[i].labelZh + " " + CUSTOM_METHOD_TOC_ITEMS[i].labelEn) && /\bmarket\b|市场|competitive|竞品/.test(normalizeTocText(current.text).toLowerCase())) {
-          score -= 2;
-        }
+        var score = matchCustomSectionScore(current.text, tocItems[i].terms);
         if (score <= 0) continue;
         best = { idx: j, score: score, item: current };
         break;
@@ -1601,7 +1768,7 @@
 
     var hasAny = assigned.some(function (it) { return !!it; });
     if (!hasAny) {
-      return CUSTOM_METHOD_TOC_ITEMS.map(function (item, idx) {
+      return tocItems.map(function (item, idx) {
         var target = candidates[Math.min(idx, candidates.length - 1)];
         if (!target) return null;
         if (!target.el.id || !/^kiki-(?:s|cm)-/.test(target.el.id)) target.el.id = "kiki-cm-" + idx;
@@ -1610,7 +1777,7 @@
     }
 
     var fallback = assigned[assigned.length - 1] || candidates[candidates.length - 1];
-    return CUSTOM_METHOD_TOC_ITEMS.map(function (item, idx) {
+    return tocItems.map(function (item, idx) {
       var target = assigned[idx] || fallback;
       if (!target) return null;
       if (!target.el.id || !/^kiki-(?:s|cm)-/.test(target.el.id)) target.el.id = "kiki-cm-" + idx;

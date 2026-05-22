@@ -4,9 +4,5 @@
   "scripts": {
     "start": "node server.mjs",
     "mirror": "node mirror.mjs"
-  },
-  "devDependencies": {
-    "esbuild": "^0.28.0",
-    "sharp": "^0.34.5"
   }
 }

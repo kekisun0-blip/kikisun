@@ -64,6 +64,15 @@ function getCacheControl(urlPath, ext) {
   return "public, max-age=300";
 }
 
+function getFileCacheKey(filePath, overrideMime) {
+  try {
+    const st = fs.statSync(filePath);
+    return `${filePath}|${overrideMime || ""}|${st.mtimeMs}|${st.size}`;
+  } catch {
+    return filePath + (overrideMime || "");
+  }
+}
+
 async function serveFile(req, res, filePath, overrideMime) {
   const ext = path.extname(filePath).toLowerCase();
   const mime = overrideMime || MIME[ext] || "application/octet-stream";
@@ -71,8 +80,8 @@ async function serveFile(req, res, filePath, overrideMime) {
   const acceptsGzip = /gzip/.test(req.headers["accept-encoding"] || "");
   const canGzip = GZIP_TYPES.has(mime);
 
-  const cacheKey = filePath + (overrideMime || "");
-  if (memCache.has(cacheKey)) {
+  const cacheKey = getFileCacheKey(filePath, overrideMime);
+  if (ext !== ".html" && memCache.has(cacheKey)) {
     const cached = memCache.get(cacheKey);
     const body = (acceptsGzip && canGzip) ? cached.gzipped : cached.data;
     const headers = {
@@ -88,13 +97,14 @@ async function serveFile(req, res, filePath, overrideMime) {
 
   const data = fs.readFileSync(filePath);
   const headers = { "Content-Type": mime, "Cache-Control": cacheHeader };
+  const cacheable = ext !== ".html" && data.length < MEM_CACHE_MAX;
 
   if (canGzip) headers["Vary"] = "Accept-Encoding";
 
   if (canGzip && acceptsGzip) {
     const gz = await gzip(data);
     headers["Content-Encoding"] = "gzip";
-    if (data.length < MEM_CACHE_MAX) {
+    if (cacheable) {
       try {
         const gz2 = gz.length > 0 ? gz : await gzip(data);
         memCache.set(cacheKey, { data, gzipped: gz2, mime });
@@ -103,7 +113,7 @@ async function serveFile(req, res, filePath, overrideMime) {
     res.writeHead(200, headers);
     res.end(gz);
   } else {
-    if (data.length < MEM_CACHE_MAX) {
+    if (cacheable) {
       const gz2 = canGzip ? await gzip(data).catch(() => data) : data;
       memCache.set(cacheKey, { data, gzipped: gz2, mime });
     }

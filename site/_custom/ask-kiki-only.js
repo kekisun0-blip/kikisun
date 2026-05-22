@@ -172,42 +172,116 @@
     setSiteLangAttr(lang);
   }
 
-  function rebuildProjectTocAfterLangSwitch() {
-    setTimeout(function () {
-      try { buildProjectToc(); } catch (e) {}
-    }, 80);
-    setTimeout(function () {
-      try { buildProjectToc(); } catch (e) {}
-    }, 260);
+  var __langSwitchInProgress = false;
+
+  function beginInstantLangSwitch() {
+    __langSwitchInProgress = true;
+    document.documentElement.classList.add("kiki-lang-instant");
+  }
+
+  function endInstantLangSwitch() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        document.documentElement.classList.remove("kiki-lang-instant");
+        __langSwitchInProgress = false;
+      });
+    });
+  }
+
+  function rememberTextNodeOriginal(tn) {
+    if (!tn || tn.__kikiOrigEn != null) return;
+    tn.__kikiOrigEn = tn.nodeValue;
+  }
+
+  function restoreSiteTranslations() {
+    var root = document.getElementById("container");
+    if (!root) return;
+    walkTextNodes(root, function (tn) {
+      if (tn.__kikiOrigEn == null) return;
+      tn.nodeValue = tn.__kikiOrigEn;
+      delete tn.__kikiOrigEn;
+    });
+  }
+
+  function disconnectZhDomObserver() {
+    clearTimeout(__zhMoTimer);
+    if (__zhMo) {
+      __zhMo.disconnect();
+      __zhMo = null;
+    }
+  }
+
+  function preserveScrollWhile(fn) {
+    var scrollX = window.scrollX;
+    var scrollY = window.scrollY;
+    try {
+      if (typeof fn === "function") fn();
+    } finally {
+      window.scrollTo(scrollX, scrollY);
+    }
+  }
+
+  function freezeHomepageMotionForLangSwitch() {
+    var container = document.getElementById("container");
+    if (!container) return;
+    container.querySelectorAll(".kiki-proj-card-fx").forEach(function (card) {
+      card.classList.add("kiki-card-in");
+    });
   }
 
   function applySiteLang(lang) {
     lang = lang === "zh" ? "zh" : "en";
+    clearProjectNavFallback();
+    beginInstantLangSwitch();
     if (lang === "zh") {
       applySiteTranslations();
+      freezeHomepageMotionForLangSwitch();
       ensureZhDomObserver();
-      rebuildProjectTocAfterLangSwitch();
+      preserveScrollWhile(function () {
+        try { buildProjectToc(); } catch (e) {}
+      });
+      endInstantLangSwitch();
       return;
     }
-    // EN: restore original English by reloading (session preference already cleared).
-    rebuildProjectTocAfterLangSwitch();
-    setTimeout(function () { location.reload(); }, 0);
+    disconnectZhDomObserver();
+    restoreSiteTranslations();
+    preserveScrollWhile(function () {
+      try { buildProjectToc(); } catch (e2) {}
+    });
+    endInstantLangSwitch();
   }
 
-  /* ─── Document-level click delegation for language switch ───
-     Survives any DOM rebuild / re-injection of the switch element.
-     IMPORTANT: selector restricted to <button data-kiki-site-lang> so it
-     never matches the <html> element (which carries the same attribute). */
+  function clearProjectNavFallback() {
+    clearTimeout(__pageTxFallbackTimer);
+    __pageTxFallbackTimer = null;
+  }
+
+  function isSiteChromeClick(target) {
+    if (!target || !target.closest) return false;
+    return !!target.closest(
+      ".kiki-site-lang-switch, #kiki-chat-root, #kiki-page-transition, .kiki-chat-panel, #kiki-toc, [data-kiki-nav-row], nav, header"
+    );
+  }
+
+  /* ─── Document-level language switch (capture, before project-nav hooks) ─── */
+  document.addEventListener("pointerdown", function (e) {
+    if (!isSiteChromeClick(e.target)) return;
+    clearProjectNavFallback();
+    e.stopPropagation();
+  }, true);
   document.addEventListener("click", function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
-    var btn = t.closest("button[data-kiki-site-lang]");
-    if (!btn) return;
-    if (!btn.closest(".kiki-site-lang-switch")) return;
-    var next = btn.getAttribute("data-kiki-site-lang");
-    if (next !== "en" && next !== "zh") return;
+    var sw = t.closest(".kiki-site-lang-switch");
+    if (!sw) return;
+    clearProjectNavFallback();
     e.preventDefault();
     e.stopPropagation();
+    var btn = t.closest("button[data-kiki-site-lang]");
+    var next = btn ? btn.getAttribute("data-kiki-site-lang") : null;
+    if (next !== "en" && next !== "zh") {
+      next = getSiteLang() === "zh" ? "en" : "zh";
+    }
     if (getSiteLang() === next) return;
     setSiteLang(next);
     applySiteLang(next);
@@ -248,6 +322,7 @@
       walkTextNodes(root, function (tn) {
         var t = tn.nodeValue || "";
         if (t.indexOf("Hi! I'm Kiki Sun") >= 0 || t.indexOf("Hi! I am Kiki Sun") >= 0) {
+          rememberTextNodeOriginal(tn);
           tn.nodeValue = ZH_HERO_FULL;
         }
       });
@@ -258,6 +333,7 @@
         if (!t || !/\S/.test(t)) return;
         var next = t.replace(/\u00a0/g, " ").replace(/\u200b/g, "");
         if (next.indexOf("Experience design is a critical component of business success") >= 0) {
+          rememberTextNodeOriginal(tn);
           tn.nodeValue =
             "体验设计是商业成功中至关重要的一环。专业的体验设计师会持续挖掘那些容易被忽视的痛点。我是 Kiki Sun（孙可月），一名擅长拆解复杂问题的设计师：用扎实的用户研究定位问题，并用理性、系统化的方法回应体验中的情绪与设计张力。在消费品等领域积累的实践经验，帮助我在主导的数字化创新项目中同时提升用户体验与运营效率。";
           return;
@@ -275,14 +351,20 @@
             normalizedNext = normalizeMatchText(next);
           }
         }
-        if (next !== t) tn.nodeValue = next;
+        if (next !== t) {
+          rememberTextNodeOriginal(tn);
+          tn.nodeValue = next;
+        }
       });
 
       /* "Experience" standalone label → 项目经历 */
       walkTextNodes(root, function (tn) {
         var t = tn.nodeValue;
         if (!t) return;
-        if (t.replace(/\u200b/g, "").trim() === "Experience") tn.nodeValue = "项目经历";
+        if (t.replace(/\u200b/g, "").trim() === "Experience") {
+          rememberTextNodeOriginal(tn);
+          tn.nodeValue = "项目经历";
+        }
       });
     } finally {
       __applyingZh = false;
@@ -306,6 +388,17 @@
   }
 
   /* ─── Site nav detection: robust for homepage + project pages ─── */
+  function navLinkMatchesLabel(txt, type) {
+    txt = (txt || "").trim();
+    if (!txt) return false;
+    if (type === "about") return /^(about|关于)$/i.test(txt);
+    if (type === "resume") return /^(resume|简历)$/i.test(txt);
+    if (type === "portfolio") {
+      return /\bkiki\s*portfolio\b/i.test(txt) || /^portfolio$/i.test(txt) || /作品集/.test(txt);
+    }
+    return false;
+  }
+
   function scoreNavRowCandidate(row) {
     if (!row || row.nodeType !== 1) return -1;
     if (row.closest("#kiki-chat-root")) return -1;
@@ -330,11 +423,11 @@
     var hasResume = false;
     var hasPortfolio = false;
     for (var i = 0; i < links.length; i++) {
-      var t = (links[i].innerText || links[i].textContent || "").trim().toLowerCase();
+      var t = (links[i].innerText || links[i].textContent || "").trim();
       if (!t) continue;
-      if (t === "about" || t === "关于") { hasAbout = true; score += 10; }
-      if (t === "resume" || t === "简历") { hasResume = true; score += 10; }
-      if (/\bkiki\s*portfolio\b/.test(t) || /\bportfolio\b/.test(t) || /作品集/.test(t)) { hasPortfolio = true; score += 14; }
+      if (navLinkMatchesLabel(t, "about")) { hasAbout = true; score += 10; }
+      if (navLinkMatchesLabel(t, "resume")) { hasResume = true; score += 10; }
+      if (navLinkMatchesLabel(t, "portfolio")) { hasPortfolio = true; score += 14; }
       if (t === "go back" || t === "← back") score -= 2;
     }
     if (!hasPortfolio) return -1;
@@ -463,9 +556,9 @@
       var hasAbout = false, hasResume = false, hasPortfolio = false;
       for (var i = 0; i < links.length; i++) {
         var txt = (links[i].innerText || links[i].textContent || "").trim();
-        if (/^(about|关于)$/i.test(txt)) hasAbout = true;
-        if (/^(resume|简历)$/i.test(txt)) hasResume = true;
-        if (/^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) hasPortfolio = true;
+        if (navLinkMatchesLabel(txt, "about")) hasAbout = true;
+        if (navLinkMatchesLabel(txt, "resume")) hasResume = true;
+        if (navLinkMatchesLabel(txt, "portfolio")) hasPortfolio = true;
       }
       if (!hasPortfolio) return;
       var score = Math.round(rect.width) - Math.round(Math.max(0, rect.top) * 2);
@@ -475,12 +568,8 @@
         if (!bestBrand || score > bestBrand.score) bestBrand = { el: row, score: score };
       }
     });
-    // On project pages prefer any match; on homepage prefer full nav
-    if (bestFull && bestBrand) {
-      var isProj = /^\/project(-\d+)?$/.test(location.pathname || "");
-      return isProj ? bestBrand.el : bestFull.el;
-    }
-    return (bestFull || bestBrand) ? (bestFull || bestBrand).el : null;
+    // Prefer the full About+Resume nav row whenever it exists (homepage + detail pages).
+    return bestFull ? bestFull.el : (bestBrand ? bestBrand.el : null);
   }
 
   function findRowDirectChild(row, node) {
@@ -526,11 +615,22 @@
   function getNavLinkByLabel(row, type) {
     if (!row) return null;
     var links = Array.from(row.querySelectorAll('a, [role="link"]'));
+    var best = null;
+    var bestTop = Infinity;
     for (var i = 0; i < links.length; i++) {
-      var txt = (links[i].innerText || links[i].textContent || "").trim();
-      if (type === "about" && /^(about|关于)$/i.test(txt)) return links[i];
-      if (type === "resume" && /^(resume|简历)$/i.test(txt)) return links[i];
-      if (type === "portfolio" && /^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) return links[i];
+      var node = links[i];
+      var txt = (node.innerText || node.textContent || "").trim();
+      if (!navLinkMatchesLabel(txt, type)) continue;
+      var top = node.getBoundingClientRect().top;
+      if (top <= 220 && top < bestTop) {
+        bestTop = top;
+        best = node;
+      }
+    }
+    if (best) return best;
+    for (var j = 0; j < links.length; j++) {
+      var txt2 = (links[j].innerText || links[j].textContent || "").trim();
+      if (navLinkMatchesLabel(txt2, type)) return links[j];
     }
     return null;
   }
@@ -549,10 +649,35 @@
     return null;
   }
 
+  function hoistSwitchOutOfNestedBrandRow(row, switchWrap) {
+    if (!row || !switchWrap || !switchWrap.parentElement) return;
+    var nested = switchWrap.closest(".kiki-nav-row");
+    while (nested && nested !== row && row.contains(nested)) {
+      if (!getNavLinkByLabel(nested, "about") && !getNavLinkByLabel(nested, "resume")) {
+        nested.removeChild(switchWrap);
+        return;
+      }
+      var parent = nested.parentElement;
+      nested = parent ? parent.closest(".kiki-nav-row") : null;
+      if (nested && !row.contains(nested)) break;
+    }
+  }
+
   function ensurePrimaryNavLayout(row, switchWrap) {
     if (!row || !switchWrap) return;
+    hoistSwitchOutOfNestedBrandRow(row, switchWrap);
     var portfolioLink = getNavLinkByLabel(row, "portfolio");
+    var aboutLink = getNavLinkByLabel(row, "about");
+    var resumeLink = getNavLinkByLabel(row, "resume");
     var brandNode = portfolioLink ? getDirectOrSelf(row, portfolioLink) : null;
+    if (brandNode && portfolioLink && (
+      (aboutLink && brandNode.contains(aboutLink)) ||
+      (resumeLink && brandNode.contains(resumeLink)) ||
+      getNavLinkByLabel(brandNode, "about") ||
+      getNavLinkByLabel(brandNode, "resume")
+    )) {
+      brandNode = portfolioLink;
+    }
 
     row.classList.add("kiki-nav-row");
     row.setAttribute("data-kiki-nav-row", "1");
@@ -562,54 +687,159 @@
       row.insertBefore(brandNode, row.firstElementChild || null);
     }
     if (brandNode) brandNode.classList.add("kiki-nav-brand");
-
-    var aboutLink = getNavLinkByLabel(row, "about");
-    var resumeLink = getNavLinkByLabel(row, "resume");
     var aboutNode = aboutLink ? getDirectOrSelf(row, aboutLink) : null;
     var resumeNode = resumeLink ? getDirectOrSelf(row, resumeLink) : null;
 
-    var isInnerPage = /^\/project(-\d+)?$/.test(location.pathname || "");
-
-    // Homepage path: About + Resume + Portfolio all present AND we are NOT on a project detail page.
-    // On project pages we ALWAYS use the inner-page path (switch at far left) regardless of nav content,
-    // because some project pages render the full global nav (About+Resume) but still need the
-    // language toggle at the leftmost position to match /project.
-    if (!isInnerPage && aboutLink && resumeLink && portfolioLink && aboutNode && resumeNode) {
+    // Unified nav: [kiki Portfolio] …… [EN | 中文] [About] [Resume] on every page that has full nav.
+    if (aboutLink && resumeLink && portfolioLink && aboutNode && resumeNode) {
       var sharedNavHost = aboutNode === brandNode || resumeNode === brandNode;
+      switchWrap.classList.add("kiki-site-nav-right");
+      aboutNode.classList.remove("kiki-site-nav-right");
+      resumeNode.classList.remove("kiki-site-nav-right");
       if (!sharedNavHost) {
-        aboutNode.classList.add("kiki-site-nav-right");
-        if (resumeNode !== aboutNode) resumeNode.classList.add("kiki-site-nav-right");
+        aboutNode.classList.add("kiki-nav-action");
+        if (resumeNode !== aboutNode) resumeNode.classList.add("kiki-nav-action");
       }
-      var aboutHost = aboutLink.parentElement || aboutNode;
+      var aboutHost = aboutLink.parentElement;
       var aboutRefNode = aboutLink;
+      if (!aboutHost || !row.contains(aboutHost)) {
+        aboutHost = row;
+        aboutRefNode = aboutNode && row.contains(aboutNode) ? aboutNode : aboutLink;
+      }
       if (sharedNavHost || aboutHost === brandNode) {
         aboutHost = row;
-        aboutRefNode = aboutNode;
+        aboutRefNode = aboutNode && row.contains(aboutNode) ? aboutNode : aboutLink;
       }
-      if (switchWrap.parentElement !== aboutHost) {
-        aboutHost.insertBefore(switchWrap, aboutRefNode);
-      } else if (switchWrap.nextSibling !== aboutRefNode) {
-        aboutHost.insertBefore(switchWrap, aboutRefNode);
-      }
-      if (resumeLink.parentElement === aboutHost) {
-        if (!(aboutLink.compareDocumentPosition(resumeLink) & Node.DOCUMENT_POSITION_FOLLOWING)) {
-          aboutHost.appendChild(resumeLink);
+      if (aboutHost && aboutRefNode && aboutHost.contains(aboutRefNode)) {
+        if (switchWrap.parentElement !== aboutHost) {
+          aboutHost.insertBefore(switchWrap, aboutRefNode);
+        } else if (switchWrap.nextSibling !== aboutRefNode) {
+          aboutHost.insertBefore(switchWrap, aboutRefNode);
         }
-      } else if (resumeNode.parentElement !== row) {
-        row.appendChild(resumeNode);
+      } else {
+        row.appendChild(switchWrap);
+      }
+      if (!isInnerSitePage()) {
+        if (resumeLink.parentElement === aboutHost) {
+          if (!(aboutLink.compareDocumentPosition(resumeLink) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+            aboutHost.appendChild(resumeLink);
+          }
+        } else if (resumeNode.parentElement !== row) {
+          row.appendChild(resumeNode);
+        }
+      } else {
+        hideNavResumeControl(row);
       }
       return;
     }
 
-    // Project / inner page path (also fallback for any page without full About+Resume nav):
-    // Layout: [EN | 中文]  [kiki Portfolio]  (switch at far left, brand immediately after).
-    var insertBeforeNode = brandNode && brandNode.parentElement === row
-      ? brandNode
-      : (row.firstElementChild || null);
-    if (switchWrap.parentElement !== row || row.firstElementChild !== switchWrap) {
-      row.insertBefore(switchWrap, insertBeforeNode);
+    // Fallback (no full About+Resume nav): keep brand left, switch before About if found.
+    if (brandNode) brandNode.classList.add("kiki-nav-brand");
+    var aboutOnly = getNavLinkByLabel(row, "about");
+    var aboutOnlyNode = aboutOnly ? getDirectOrSelf(row, aboutOnly) : null;
+    if (aboutOnlyNode) {
+      switchWrap.classList.add("kiki-site-nav-right");
+      aboutOnlyNode.classList.add("kiki-nav-action");
+      var host = aboutOnly.parentElement || aboutOnlyNode;
+      var ref = aboutOnly;
+      if (host === brandNode) {
+        host = row;
+        ref = aboutOnlyNode;
+      }
+      if (host && ref && host.contains(ref)) {
+        if (switchWrap.parentElement !== host) host.insertBefore(switchWrap, ref);
+        else if (switchWrap.nextSibling !== ref) host.insertBefore(switchWrap, ref);
+      } else {
+        row.appendChild(switchWrap);
+      }
+      return;
     }
-    if (brandNode) brandNode.classList.add("kiki-nav-inner-brand");
+    switchWrap.classList.add("kiki-site-nav-right");
+    if (switchWrap.parentElement !== row) row.appendChild(switchWrap);
+    else if (switchWrap !== row.lastElementChild) row.appendChild(switchWrap);
+    if (isInnerSitePage()) hideNavResumeControl(row);
+  }
+
+  function getPrimaryNavRow() {
+    var row = findMainNavRow();
+    if (row) return row;
+    var root = document.getElementById("container");
+    var about = getNavLinkByLabel(root, "about");
+    if (about) {
+      var cur = about.parentElement;
+      while (cur && cur !== root) {
+        if (getNavLinkByLabel(cur, "portfolio") && getNavLinkByLabel(cur, "resume")) return cur;
+        cur = cur.parentElement;
+      }
+    }
+    var rows = collectNavRows();
+    var primaryRow = pickPrimaryNavRow(rows);
+    if (!primaryRow && rows.length) primaryRow = rows[0];
+    return primaryRow;
+  }
+
+  function forceSwitchBeforeAbout(row, switchWrap) {
+    if (!switchWrap) return;
+    var root = document.getElementById("container");
+    var scope = row || root;
+    var about = getNavLinkByLabel(scope, "about") || getNavLinkByLabel(root, "about");
+    if (!about || !about.parentElement) return;
+    if (row) hoistSwitchOutOfNestedBrandRow(row, switchWrap);
+    else hoistSwitchOutOfNestedBrandRow(root, switchWrap);
+    switchWrap.classList.add("kiki-site-nav-right");
+    var host = about.parentElement;
+    if (host.contains(about)) {
+      if (switchWrap.parentElement !== host) host.insertBefore(switchWrap, about);
+      else if (switchWrap.nextSibling !== about) host.insertBefore(switchWrap, about);
+    }
+  }
+
+  function markPrimaryNavRows(primaryRow) {
+    if (!primaryRow) return;
+    var rows = collectNavRows();
+    if (rows.indexOf(primaryRow) < 0) rows.unshift(primaryRow);
+    rows.forEach(function (row) {
+      row.setAttribute("data-kiki-nav-primary", row === primaryRow ? "1" : "0");
+    });
+  }
+
+  function reconcileSiteLangSwitchPlacement() {
+    var wrap = document.querySelector(".kiki-site-lang-switch");
+    if (!wrap || __siteLangSwitchIniting) return;
+    var primaryRow = getPrimaryNavRow();
+    if (primaryRow) {
+      markPrimaryNavRows(primaryRow);
+      wrap.removeAttribute("data-kiki-site-switch-fixed");
+      ensurePrimaryNavLayout(primaryRow, wrap);
+      if (!wrap.parentElement) {
+        var insertRef = findSiteSwitchInsertRef(primaryRow);
+        if (insertRef) primaryRow.insertBefore(wrap, insertRef);
+        else primaryRow.appendChild(wrap);
+      }
+      ensureSiteSwitchPlacement(primaryRow, wrap);
+    }
+    forceSwitchBeforeAbout(primaryRow, wrap);
+    alignSiteSwitchToAnchor();
+    var brand = document.querySelector(".kiki-nav-brand");
+    var about = getNavLinkByLabel(document.getElementById("container"), "about");
+    if (brand && about) {
+      var swRect = wrap.getBoundingClientRect();
+      var brandRect = brand.getBoundingClientRect();
+      if (swRect.left < brandRect.right + 40) forceSwitchBeforeAbout(primaryRow, wrap);
+    }
+    if (!isSiteSwitchClickable(wrap)) {
+      if (isInnerSitePage()) {
+        repairTopNavAfterResumeHide();
+        forceSwitchBeforeAbout(primaryRow, wrap);
+      } else if (!document.body.classList.contains("kiki-chat-open")) {
+        promoteSiteSwitchToViewportLayer(wrap);
+      }
+    }
+    if (document.body.classList.contains("kiki-chat-open")) {
+      wrap.setAttribute("data-kiki-hidden-chat", "1");
+      wrap.removeAttribute("data-kiki-site-switch-fixed");
+    }
+    syncInnerPageNavChrome();
   }
 
   function normalizeDetachedSiteSwitchPlacement() {
@@ -645,20 +875,46 @@
 
   function promoteSiteSwitchToViewportLayer(wrap) {
     if (!wrap) return;
+    if (document.body.classList.contains("kiki-chat-open")) return;
     wrap.setAttribute("data-kiki-site-switch-fixed", "1");
     if (wrap.parentElement !== document.body) document.body.appendChild(wrap);
   }
 
-  function cleanupSiteLangSwitches(primaryRow) {
-    var all = Array.from(document.querySelectorAll(".kiki-site-lang-switch"));
-    all.forEach(function (sw) {
-      if (sw.getAttribute("data-kiki-site-switch-fixed") === "1") return;
-      if (!primaryRow || !primaryRow.contains(sw)) sw.remove();
-    });
-    if (!primaryRow) return;
-    var own = Array.from(primaryRow.querySelectorAll(".kiki-site-lang-switch"));
-    for (var i = 1; i < own.length; i++) own[i].remove();
+  function syncSiteSwitchWithChatOpen(open) {
+    var wrap = document.querySelector(".kiki-site-lang-switch");
+    if (!wrap) return;
+    if (open) {
+      wrap.setAttribute("data-kiki-hidden-chat", "1");
+      wrap.removeAttribute("data-kiki-site-switch-fixed");
+    } else {
+      wrap.removeAttribute("data-kiki-hidden-chat");
+      reconcileSiteLangSwitchPlacement();
+    }
   }
+
+  function getAllSiteLangSwitches() {
+    return Array.from(document.querySelectorAll(".kiki-site-lang-switch"));
+  }
+
+  function removeAllSiteLangSwitches() {
+    getAllSiteLangSwitches().forEach(function (sw) { sw.remove(); });
+  }
+
+  function siteLangSwitchNeedsInit() {
+    var all = getAllSiteLangSwitches();
+    if (!all.length) return true;
+    if (all.length > 1) return true;
+    return !document.contains(all[0]);
+  }
+
+  /** Keep exactly one switch (including fixed viewport layer). */
+  function cleanupSiteLangSwitches(keepSwitch) {
+    getAllSiteLangSwitches().forEach(function (sw) {
+      if (sw !== keepSwitch) sw.remove();
+    });
+  }
+
+  var __siteLangSwitchIniting = false;
 
   function widenNavParentIfNeeded(row) {
     if (!row) return;
@@ -667,20 +923,17 @@
 
   /* ─── Nav language toggle ─── */
   function initSiteLangSwitch() {
-    var rows = collectNavRows();
-    var primaryRow = findMainNavRow() || pickPrimaryNavRow(rows);
-    if (!primaryRow && rows.length) primaryRow = rows[0];
+    if (__siteLangSwitchIniting) return;
+    __siteLangSwitchIniting = true;
+    var wrap = null;
+    var primaryRow = getPrimaryNavRow();
     var useFixedLayer = !primaryRow;
-    if (primaryRow) {
-      rows.forEach(function (row) {
-        row.setAttribute("data-kiki-nav-primary", row === primaryRow ? "1" : "0");
-      });
-    }
-    Array.from(document.querySelectorAll(".kiki-site-lang-switch")).forEach(function (sw) { sw.remove(); });
+    if (primaryRow) markPrimaryNavRows(primaryRow);
+    removeAllSiteLangSwitches();
     try {
       if (primaryRow) widenNavParentIfNeeded(primaryRow);
       var lang = getSiteLang();
-      var wrap = document.createElement("div");
+      wrap = document.createElement("div");
       wrap.className = "kiki-chat-lang-switch kiki-site-lang-switch";
       wrap.setAttribute("data-kiki-site-switch", "1");
       wrap.setAttribute("role", "group");
@@ -711,7 +964,7 @@
       wrap.appendChild(ben);
       wrap.appendChild(bzh);
 
-      cleanupSiteLangSwitches(primaryRow || null);
+      cleanupSiteLangSwitches(wrap);
       if (primaryRow && !useFixedLayer) {
         ensurePrimaryNavLayout(primaryRow, wrap);
         if (!wrap.parentElement) {
@@ -721,23 +974,35 @@
         }
         ensureSiteSwitchPlacement(primaryRow, wrap);
       }
-      if (useFixedLayer || !isSiteSwitchClickable(wrap)) promoteSiteSwitchToViewportLayer(wrap);
+      if (useFixedLayer || (!isSiteSwitchClickable(wrap) && !isInnerSitePage())) {
+        promoteSiteSwitchToViewportLayer(wrap);
+      }
 
-      ben.addEventListener("click", function () {
+      ben.addEventListener("click", function (ev) {
+        clearProjectNavFallback();
+        ev.stopPropagation();
         if (getSiteLang() === "en") return;
         setSiteLang("en");
         applySiteLang("en");
       });
-      bzh.addEventListener("click", function () {
+      bzh.addEventListener("click", function (ev) {
+        clearProjectNavFallback();
+        ev.stopPropagation();
         if (getSiteLang() === "zh") return;
         setSiteLang("zh");
         applySiteLang("zh");
       });
     } catch (e) {}
-    cleanupSiteLangSwitches(primaryRow || null);
+    finally {
+      if (wrap && document.contains(wrap)) cleanupSiteLangSwitches(wrap);
+      else removeAllSiteLangSwitches();
+      __siteLangSwitchIniting = false;
+    }
     normalizeDetachedSiteSwitchPlacement();
+    reconcileSiteLangSwitchPlacement();
     alignSiteSwitchToAnchor();
     setSiteLangAttr(getSiteLang());
+    syncInnerPageNavChrome();
   }
 
   var __siteLangMo = null;
@@ -756,11 +1021,13 @@
     __siteLangMo = new MutationObserver(function () {
       clearTimeout(__siteLangMoTimer);
       __siteLangMoTimer = setTimeout(function () {
-        // Only re-init if switch is actually missing or detached from DOM.
-        // Prevents constant rebuilds while typewriter / TOC / other JS mutates the DOM.
-        var existing = document.querySelector(".kiki-site-lang-switch");
-        if (!existing || !document.contains(existing)) {
-          initSiteLangSwitch();
+        if (__langSwitchInProgress) return;
+        // Re-init when missing, detached, or duplicated (concurrent inits / fixed+nav overlap).
+        if (siteLangSwitchNeedsInit()) initSiteLangSwitch();
+        else {
+          var keep = document.querySelector(".kiki-site-lang-switch");
+          if (keep) cleanupSiteLangSwitches(keep);
+          reconcileSiteLangSwitchPlacement();
         }
       }, 300);
     });
@@ -768,14 +1035,17 @@
   }
 
   function scheduleSiteLangSwitchRecovery() {
-    initSiteLangSwitch();
+    if (siteLangSwitchNeedsInit()) initSiteLangSwitch();
+    else reconcileSiteLangSwitchPlacement();
     ensureSiteLangSwitchObserver();
-    var reinitIfMissing = function () {
-      var existing = document.querySelector(".kiki-site-lang-switch");
-      if (!existing || !document.contains(existing)) initSiteLangSwitch();
+    syncInnerPageNavChrome();
+    var recover = function () {
+      if (siteLangSwitchNeedsInit()) initSiteLangSwitch();
+      else reconcileSiteLangSwitchPlacement();
+      syncInnerPageNavChrome();
     };
-    setTimeout(reinitIfMissing, 600);
-    setTimeout(reinitIfMissing, 1800);
+    setTimeout(recover, 600);
+    setTimeout(recover, 1800);
   }
 
   var __lastI18nPath = "";
@@ -835,7 +1105,7 @@
       overviewEn: "Companion software for hardware products plus usability testing.",
       process: ["联调", "测试", "迭代"],
       processEn: ["Integration", "Testing", "Iteration"] },
-    { match: /huwei|huawei|华为|nus|ar smart/i, title: "HUWEI & NUS AR Smart Glass", meta: "Huawei × NUS 🇸🇬🇨🇳 · UI/UX Designer · 2022.5",
+    { match: /huwei|huawei|华为|nus|ar smart|puppyland/i, title: "HUWEI & NUS AR Smart Glass", meta: "Huawei × NUS 🇸🇬🇨🇳 · UI/UX Designer · 2022.5", route: "/project-6",
       overview: "AR 智能眼镜界面与交互设计，获 Judges' Choice Award。",
       overviewEn: "AR smart glasses UI/UX design, won the Judges' Choice Award.",
       process: ["研究", "交互设计", "评审"],
@@ -1292,6 +1562,7 @@
       panel.classList.toggle("kiki-chat-panel--open", open);
       trigger.classList.toggle("kiki-chat-trigger--hidden", open);
       document.body.classList.toggle("kiki-chat-open", open);
+      try { syncSiteSwitchWithChatOpen(open); } catch (e) {}
       if (open) { applyPanelLang(getChatLang()); renderHistory(); setTimeout(function(){input.focus();},350); }
     }
 
@@ -1361,6 +1632,111 @@
       if (t === "Go Back" || t === "← Back" || t === "返回") return true;
     }
     return false;
+  }
+
+  function isHomePage() {
+    var path = normalizeNavPath(location.pathname || "");
+    return path === "/" || path === "/index.html";
+  }
+
+  /** All pages except homepage — hide Resume in top bar. */
+  function isInnerSitePage() {
+    return !isHomePage();
+  }
+
+  function linkIsResumeControl(node) {
+    if (!node) return false;
+    var txt = (node.innerText || node.textContent || "").trim();
+    if (/^resume\b/i.test(txt) || /^简历\b/.test(txt)) return true;
+    return navLinkMatchesLabel(txt, "resume");
+  }
+
+  function repairTopNavAfterResumeHide() {
+    var root = document.getElementById("container") || document.body;
+    Array.from(root.querySelectorAll('[data-kiki-hidden="resume-inner"]')).forEach(function (block) {
+      var txt = normalizeMatchText(block.innerText || "");
+      if (/about|portfolio|kiki\s*portfolio|关于|作品集/i.test(txt)) {
+        block.style.removeProperty("display");
+        block.style.removeProperty("visibility");
+        block.style.removeProperty("width");
+        block.style.removeProperty("min-width");
+        block.style.removeProperty("margin");
+        block.style.removeProperty("padding");
+        block.style.removeProperty("overflow");
+        block.removeAttribute("data-kiki-hidden");
+        block.removeAttribute("aria-hidden");
+      }
+    });
+    var row = getPrimaryNavRow();
+    if (row) {
+      row.style.removeProperty("display");
+      row.style.removeProperty("visibility");
+      row.style.setProperty("opacity", "1", "important");
+    }
+    ["portfolio", "about"].forEach(function (type) {
+      var link = getNavLinkByLabel(root, type);
+      if (!link) return;
+      var el = link;
+      for (var up = 0; up < 5 && el; up++) {
+        if (el.getBoundingClientRect().top > 240) break;
+        el.style.removeProperty("display");
+        el.style.removeProperty("visibility");
+        el.style.removeProperty("opacity");
+        el.style.removeProperty("width");
+        el.style.removeProperty("height");
+        el.removeAttribute("data-kiki-hidden");
+        el.removeAttribute("aria-hidden");
+        el = el.parentElement;
+      }
+    });
+  }
+
+  function hideNavResumeControl(scope) {
+    var root = scope || document.getElementById("container") || document.body;
+    repairTopNavAfterResumeHide();
+    Array.from(root.querySelectorAll('a, [role="link"], button')).forEach(function (node) {
+      if (!linkIsResumeControl(node)) return;
+      var r = node.getBoundingClientRect();
+      if (r.top > 220 || r.bottom < 0) return;
+      node.style.setProperty("display", "none", "important");
+      node.style.setProperty("visibility", "hidden", "important");
+      node.setAttribute("data-kiki-hidden", "resume-inner");
+      node.setAttribute("aria-hidden", "true");
+    });
+    repairTopNavAfterResumeHide();
+  }
+
+  function restoreNavResumeControl(scope) {
+    var root = scope || document.getElementById("container") || document.body;
+    Array.from(root.querySelectorAll('[data-kiki-hidden="resume-inner"]')).forEach(function (block) {
+      block.style.removeProperty("display");
+      block.style.removeProperty("visibility");
+      block.removeAttribute("data-kiki-hidden");
+      block.removeAttribute("aria-hidden");
+    });
+  }
+
+  function syncInnerPageNavChrome() {
+    var inner = isInnerSitePage();
+    document.documentElement.setAttribute("data-kiki-inner-page", inner ? "1" : "0");
+    if (inner) {
+      hideNavResumeControl();
+      repairTopNavAfterResumeHide();
+      var wrap = document.querySelector(".kiki-site-lang-switch");
+      var row = getPrimaryNavRow();
+      if (wrap && row) {
+        wrap.removeAttribute("data-kiki-site-switch-fixed");
+        if (wrap.parentElement === document.body) {
+          var about = getNavLinkByLabel(row, "about") || getNavLinkByLabel(document.getElementById("container"), "about");
+          if (about && about.parentElement) about.parentElement.insertBefore(wrap, about);
+          else row.appendChild(wrap);
+        }
+        ensurePrimaryNavLayout(row, wrap);
+        forceSwitchBeforeAbout(row, wrap);
+      }
+    } else {
+      restoreNavResumeControl();
+    }
   }
 
   function kikiDebounceFn(fn, ms) {
@@ -1462,6 +1838,8 @@
 
   function isMethodologyHeading(txt) {
     if (isTocNoiseTitle(txt)) return false;
+    var normalized = normalizeTocText(txt).toLowerCase();
+    if (/^conclusion$/i.test(normalized) || normalized === "结论") return true;
     return hasMethodKeyword(txt);
   }
 
@@ -1491,23 +1869,9 @@
     "sensemercury",
     "jcv sensemercury"
   ];
-  var SENSELINK_CUSTOM_TOC_ITEMS = [
-    {
-      labelEn: "Project Overview",
-      labelZh: "项目概览",
-      terms: ["senselink jcv", "machine management", "temperature", "overview", "background"]
-    },
-    {
-      labelEn: "JCV SenseMercury",
-      labelZh: "SenseMercury 平台",
-      terms: ["jcv sensemercury", "sensemercury"]
-    },
-    {
-      labelEn: "JCV SenseThunder",
-      labelZh: "SenseThunder 模块",
-      terms: ["jcv sensethunder", "sensethunder"]
-    }
-  ];
+  var DESIGN_WALKTHROUGH_HEADING_RE = /\bdesign\s*walk\s*through\b/i;
+  var SENSELINK_TOC_FOOTER_NOISE_RE =
+    /^(other\s*projects|see\s*project|connect\s*with\s*me|decathlon\s*dpcp|dpcp\s*3y|pain\s*points|ux\s*strategy|business\s*process|business\s*module|vitamin\s*play|cockpit|portal)/i;
 
   /* ── SenseThunder JCV custom TOC ── */
   var SENSETHUNDER_PAGE_MARKERS = [
@@ -1519,35 +1883,107 @@
     {
       labelEn: "Product Overview",
       labelZh: "产品概览",
-      terms: ["sensethunder jcv", "physical product", "control panel", "display"]
+      terms: ["physical product", "sensethunder jcv-"]
     },
     {
       labelEn: "User Persona",
       labelZh: "用户画像",
-      terms: ["user persona", "persona", "用户画像"]
+      terms: ["user persona", "用户画像"]
     },
     {
       labelEn: "User Research",
       labelZh: "用户研究",
-      terms: ["user research", "research", "summary and report", "thunder air", "用户研究"]
+      terms: ["user research", "summary and report / thunder air", "用户研究"]
     },
     {
       labelEn: "Usability Testing",
       labelZh: "可用性测试",
-      terms: ["user test", "sus", "feedback", "usability", "testing", "可用性"]
+      terms: ["user test + feedback + live + record", "user test + feedback", "可用性测试"]
     },
     {
       labelEn: "UI Design",
       labelZh: "界面设计",
-      terms: ["ui design", "design outcome", "out of the box", "unpack", "assembly", "界面"]
+      terms: ["out of the box", "unpack the box", "界面设计"]
+    }
+  ];
+
+  /* ── Mobile Banking Research (University of York) custom TOC ── */
+  var MOBILE_BANKING_PAGE_MARKERS = [
+    "mobile banking research",
+    "cross-cultural study on",
+    "secondary research",
+    "primary research",
+    "university of york"
+  ];
+  var MOBILE_BANKING_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "Research Overview",
+      labelZh: "研究概述",
+      terms: ["cross-cultural study", "user experience design in mobile banking", "移动银行用户体验"]
+    },
+    {
+      labelEn: "Secondary Research",
+      labelZh: "二手研究",
+      terms: ["secondary research", "二手研究"]
+    },
+    {
+      labelEn: "Primary Research",
+      labelZh: "一手研究",
+      terms: ["primary research", "一手研究"]
+    },
+    {
+      labelEn: "Data Analysis",
+      labelZh: "数据分析",
+      terms: ["data analysis", "数据分析"]
+    },
+    {
+      labelEn: "Conclusion",
+      labelZh: "结论",
+      terms: ["conclusion", "结论"]
+    }
+  ];
+
+  /* ── HUWEI & NUS AR Smart Glass ── */
+  var HUWEI_PAGE_MARKERS = [
+    "huwei & nus ar smart glass",
+    "huawei & nus",
+    "puppyland",
+    "puppy land",
+    "ar smart glass",
+    "hololens",
+    "ar+ pets",
+    "judges choice award"
+  ];
+  var PROJECT_FOOTER_CUTOFF_RE = /^other\s*projects$/i;
+  var DECATHLON_TOC_SECTION_RE =
+    /^(dpcp|decathlon|pain\s*points|ux\s*strategy|business\s*process|business\s*module|vitamin\s*play|cockpit|portal|uems|project\s*content)/i;
+  var HUWEI_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "Project Overview",
+      labelZh: "项目概述",
+      terms: ["puppyland", "hololens", "ar smart glass", "huwei & nus", "deceased pets", "ar application"]
+    },
+    {
+      labelEn: "AR+ Pets",
+      labelZh: "AR+ 宠物",
+      terms: ["ar+ pets", "ar pets", "puppy land"]
+    },
+    {
+      labelEn: "UI Design",
+      labelZh: "界面设计",
+      terms: ["ui design", "interaction design", "interface design", "界面设计", "交互设计"]
+    },
+    {
+      labelEn: "Award",
+      labelZh: "获奖",
+      terms: ["judges choice", "judges' choice", "award", "huawei & nus"]
     }
   ];
 
   /* ── Decathlon custom TOC ── */
   var DECATHLON_PAGE_MARKERS = [
     "decathlon dpcp",
-    "decathlon",
-    "dpcp",
+    "decathlon dpcp - global supply",
     "global supply chain",
     "supply chain automation"
   ];
@@ -1631,54 +2067,278 @@
     }
   ];
 
+  function findProjectFooterCutoffY(scope) {
+    var pageH = Math.max(document.body.scrollHeight, 1000);
+    var cutoff = pageH * 0.92;
+    if (!scope) return cutoff;
+    var markers = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
+    for (var i = 0; i < markers.length; i++) {
+      var txt = normalizeTocText(markers[i].innerText || "");
+      if (!txt || txt.length > 90) continue;
+      if (!PROJECT_FOOTER_CUTOFF_RE.test(txt) && !/^other\s*projects$/i.test(txt)) continue;
+      var top = markers[i].getBoundingClientRect().top + window.scrollY;
+      if (top > pageH * 0.32) cutoff = Math.min(cutoff, top - 80);
+    }
+    return cutoff;
+  }
+
+  function getProjectPrimaryTitle() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return "";
+    var nodes = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
+    var goBackIdx = -1;
+    for (var i = 0; i < nodes.length; i++) {
+      var raw = (nodes[i].innerText || "").trim();
+      if (/^(go back|← back|返回)$/i.test(raw)) {
+        goBackIdx = i;
+        break;
+      }
+    }
+    var footerY = findProjectFooterCutoffY(scope);
+    var start = goBackIdx >= 0 ? goBackIdx + 1 : 0;
+    for (var j = start; j < nodes.length; j++) {
+      var el = nodes[j];
+      if (el.children.length > 0) continue;
+      var txt = (el.innerText || "").trim();
+      if (!txt || txt.length < 8 || txt.length > 160) continue;
+      if (/^(go back|← back|返回)$/i.test(txt)) continue;
+      if (/^dpcp\s*3y\s*mission$/i.test(normalizeTocText(txt))) continue;
+      var style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      var fs = parseFloat(style.fontSize);
+      if (fs < 24) continue;
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      if (top > footerY) break;
+      return normalizeTocText(txt).toLowerCase();
+    }
+    return "";
+  }
+
+  function getProjectPageScopedSnapshot() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return "";
+    var footerY = findProjectFooterCutoffY(scope);
+    var parts = [];
+    Array.from(scope.querySelectorAll("p, h1, h2, h3, h4")).forEach(function (el) {
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      if (top > footerY) return;
+      var txt = normalizeTocText(el.innerText || "");
+      if (txt && txt.length < 220) parts.push(txt);
+    });
+    return parts.join(" ").toLowerCase();
+  }
+
   function getProjectPageTextSnapshot() {
+    var scoped = getProjectPageScopedSnapshot();
+    if (scoped) return scoped;
     var container = document.querySelector("#container");
     if (!container) return "";
     return normalizeTocText(container.innerText || "").toLowerCase();
   }
 
-  function isSolplanetProjectPage() {
-    if (!SOLPLANET_TOC_PATH_RE.test(location.pathname || "")) return false;
-    var snapshot = getProjectPageTextSnapshot();
-    if (!snapshot) return false;
-    for (var i = 0; i < SOLPLANET_PAGE_MARKERS.length; i++) {
-      if (snapshot.indexOf(SOLPLANET_PAGE_MARKERS[i]) >= 0) return true;
+  function resolveProjectTocKind() {
+    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return "";
+    var snapshot = getProjectPageScopedSnapshot();
+    var primary = getProjectPrimaryTitle();
+    var path = normalizeNavPath(location.pathname || "");
+
+    for (var sl = 0; sl < SENSELINK_PAGE_MARKERS.length; sl++) {
+      if (snapshot.indexOf(SENSELINK_PAGE_MARKERS[sl]) >= 0) return "senselink";
     }
-    return false;
+
+    if (!/huwei|huawei|puppyland|decathlon|dpcp\s*3y|ar\s*smart/i.test(primary)) {
+      for (var st = 0; st < SENSETHUNDER_PAGE_MARKERS.length; st++) {
+        if (snapshot.indexOf(SENSETHUNDER_PAGE_MARKERS[st]) >= 0) return "sensethunder";
+      }
+    }
+
+    if (path === "/project-8") return "mobilebanking";
+    if (/mobile banking|university of york|lloyds bank/i.test(primary)) return "mobilebanking";
+    for (var mb = 0; mb < MOBILE_BANKING_PAGE_MARKERS.length; mb++) {
+      if (snapshot.indexOf(MOBILE_BANKING_PAGE_MARKERS[mb]) >= 0) return "mobilebanking";
+    }
+
+    if (SOLPLANET_TOC_PATH_RE.test(path)) {
+      for (var sp = 0; sp < SOLPLANET_PAGE_MARKERS.length; sp++) {
+        if (snapshot.indexOf(SOLPLANET_PAGE_MARKERS[sp]) >= 0) return "solplanet";
+      }
+    }
+
+    for (var hw = 0; hw < HUWEI_PAGE_MARKERS.length; hw++) {
+      if (snapshot.indexOf(HUWEI_PAGE_MARKERS[hw]) >= 0) return "huwei";
+    }
+
+    if (/huwei|huawei|puppyland|puppy\s*land|ar\s*smart\s*glass|ar\+\s*pets/i.test(primary)) {
+      return "huwei";
+    }
+
+    if (
+      /huwei\s*nus|huawei\s*nus|puppyland|puppy\s*land|ar\s*smart\s*glass|ar\+\s*pets|judges\s*choice|design\s*background|three\s*million\s*pets/i.test(
+        snapshot
+      )
+    ) {
+      return "huwei";
+    }
+
+    if (/decathlon|global\s*supply\s*chain/i.test(primary) && !/huwei|huawei|puppyland/i.test(primary)) {
+      return "decathlon";
+    }
+    if (
+      snapshot.indexOf("decathlon dpcp") >= 0 ||
+      snapshot.indexOf("global supply chain") >= 0
+    ) {
+      return "decathlon";
+    }
+    return "";
+  }
+
+  function isHuweiARProjectPage() {
+    return resolveProjectTocKind() === "huwei";
+  }
+
+  function isSolplanetProjectPage() {
+    return resolveProjectTocKind() === "solplanet";
   }
 
   function isSenseLinkJCVPage() {
-    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
-    var snapshot = getProjectPageTextSnapshot();
-    if (!snapshot) return false;
-    for (var i = 0; i < SENSELINK_PAGE_MARKERS.length; i++) {
-      if (snapshot.indexOf(SENSELINK_PAGE_MARKERS[i]) >= 0) return true;
-    }
-    return false;
+    return resolveProjectTocKind() === "senselink";
   }
 
   function isSenseThunderJCVPage() {
-    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
-    if (isSenseLinkJCVPage()) return false; // SenseLink takes priority
-    var snapshot = getProjectPageTextSnapshot();
-    if (!snapshot) return false;
-    for (var i = 0; i < SENSETHUNDER_PAGE_MARKERS.length; i++) {
-      if (snapshot.indexOf(SENSETHUNDER_PAGE_MARKERS[i]) >= 0) return true;
-    }
-    return false;
+    return resolveProjectTocKind() === "sensethunder";
+  }
+
+  function isMobileBankingProjectPage() {
+    return resolveProjectTocKind() === "mobilebanking";
   }
 
   function isDecathlonProjectPage() {
+    return resolveProjectTocKind() === "decathlon";
+  }
+
+  function isDecathlonTocSectionNoise(txt) {
+    return DECATHLON_TOC_SECTION_RE.test(normalizeTocText(txt));
+  }
+
+  var HUWEI_DECATHLON_STRAY_HEADING_RE = /^dpcp\s*3y\s*mission$/i;
+  var HUWEI_CONTENT_SIGNAL_RE =
+    /huwei|huawei|puppyland|puppy\s*land|ar\s*smart\s*glass|design\s*background|three\s*million\s*pets|brainstorm/i;
+
+  function pageHasHuweiProjectContent() {
     if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return false;
-    // JCV pages also contain Decathlon text in their "Other Projects" section —
-    // detect JCV first so Decathlon does not false-fire on those pages.
-    if (isSenseLinkJCVPage() || isSenseThunderJCVPage()) return false;
-    var snapshot = getProjectPageTextSnapshot();
-    if (!snapshot) return false;
-    for (var i = 0; i < DECATHLON_PAGE_MARKERS.length; i++) {
-      if (snapshot.indexOf(DECATHLON_PAGE_MARKERS[i]) >= 0) return true;
+    if (isHuweiARProjectPage()) return true;
+    return HUWEI_CONTENT_SIGNAL_RE.test(getProjectPageTextSnapshot());
+  }
+
+  function elementTextIsDpcpStrayHeading(el) {
+    if (!el) return false;
+    var txt = normalizeTocText((el.innerText || el.textContent || "").trim());
+    if (!txt || txt.length > 100) return false;
+    return HUWEI_DECATHLON_STRAY_HEADING_RE.test(txt);
+  }
+
+  function hideDecathlonStrayBlock(el, scope) {
+    var txt = normalizeTocText((el.innerText || "").trim());
+    var block = el;
+    for (var up = 0; up < 6 && block.parentElement && block.parentElement !== scope; up++) {
+      var parent = block.parentElement;
+      var parentTxt = normalizeTocText((parent.innerText || "").trim());
+      if (parentTxt === txt) block = parent;
+      else break;
     }
-    return false;
+    block.style.setProperty("display", "none", "important");
+    block.style.setProperty("visibility", "hidden", "important");
+    block.style.setProperty("height", "0", "important");
+    block.style.setProperty("margin", "0", "important");
+    block.style.setProperty("padding", "0", "important");
+    block.style.setProperty("overflow", "hidden", "important");
+    block.setAttribute("data-kiki-hidden", "decathlon-stray");
+    block.setAttribute("aria-hidden", "true");
+  }
+
+  /** Hide Decathlon stray heading leaked into HUWEI /project-6 Figma export. */
+  function removeHuweiDecathlonStrayHeadings() {
+    if (!pageHasHuweiProjectContent()) return;
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return;
+    var nodes = scope.querySelectorAll("p, h1, h2, h3, h4, div, span");
+    nodes.forEach(function (el) {
+      if (!el || el.getAttribute("data-kiki-hidden") === "decathlon-stray") return;
+      if (!elementTextIsDpcpStrayHeading(el)) return;
+      var kids = Array.from(el.children || []);
+      for (var k = 0; k < kids.length; k++) {
+        if (elementTextIsDpcpStrayHeading(kids[k])) return;
+      }
+      hideDecathlonStrayBlock(el, scope);
+    });
+  }
+
+  function collectHuweiSectionCandidates() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var footerY = findProjectFooterCutoffY(scope);
+    var all = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var seen = new Set();
+    var rows = [];
+    all.forEach(function (node) {
+      if (!node || !node.getBoundingClientRect) return;
+      var txt = (node.innerText || "").trim();
+      if (!txt || txt.length < 3 || txt.length > 120) return;
+      if (isDecathlonTocSectionNoise(txt)) return;
+      if (PROJECT_FOOTER_CUTOFF_RE.test(normalizeTocText(txt))) return;
+      if (/^[\u200b\s]+$/.test(txt)) return;
+      var anchor = node.closest ? node.closest("p, h1, h2, h3, h4") : node;
+      if (!anchor || !anchor.getBoundingClientRect) anchor = node;
+      var style = window.getComputedStyle(anchor);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      var fs = parseFloat(style.fontSize);
+      if (fs < 14 || fs > 120) return;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      if (top < 280 || top > footerY) return;
+      var key = normalizeTocText(txt).toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ el: anchor, text: txt.split(/\n+/)[0].trim(), fs: Math.round(fs), top: Math.round(top) });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    return rows;
+  }
+
+  function findHuweiAnchors() {
+    var candidates = collectHuweiSectionCandidates();
+    if (!candidates.length) return findProjectHeadings();
+    var tocItems = HUWEI_CUSTOM_TOC_ITEMS;
+    var assigned = new Array(tocItems.length).fill(null);
+    var cursor = 0;
+    for (var i = 0; i < tocItems.length; i++) {
+      for (var j = cursor; j < candidates.length; j++) {
+        if (matchCustomSectionScore(candidates[j].text, tocItems[i].terms) <= 0) continue;
+        assigned[i] = candidates[j];
+        cursor = j + 1;
+        break;
+      }
+    }
+    for (var b = assigned.length - 2; b >= 0; b--) {
+      if (!assigned[b] && assigned[b + 1]) assigned[b] = assigned[b + 1];
+    }
+    var hasAny = assigned.some(function (it) { return !!it; });
+    if (!hasAny) {
+      return candidates.slice(0, Math.min(4, candidates.length)).map(function (item, idx) {
+        if (!item.el.id || !/^kiki-(?:s|cm)-/.test(item.el.id)) item.el.id = "kiki-cm-hw-" + idx;
+        return { el: item.el, text: item.text, fs: item.fs, top: item.top };
+      });
+    }
+    return tocItems.map(function (item, idx) {
+      var target = assigned[idx];
+      if (!target) return null;
+      if (!target.el.id || !/^kiki-(?:s|cm)-/.test(target.el.id)) target.el.id = "kiki-cm-hw-" + idx;
+      return {
+        el: target.el,
+        text: getCustomTocLabel(item),
+        fs: target.fs,
+        top: target.top
+      };
+    }).filter(Boolean);
   }
 
   function getCustomTocLabel(item) {
@@ -1687,10 +2347,102 @@
     return item.labelEn || item.labelZh || "";
   }
 
-  function collectProjectSectionCandidates(minFontSize) {
+  function isDesignWalkthroughHeading(txt) {
+    var normalized = normalizeTocText(txt);
+    if (!normalized) return false;
+    return DESIGN_WALKTHROUGH_HEADING_RE.test(normalized);
+  }
+
+  function isSenseLinkTocFooterNoise(txt) {
+    var normalized = normalizeTocText(txt).toLowerCase();
+    if (!normalized) return true;
+    if (SENSELINK_TOC_FOOTER_NOISE_RE.test(normalized)) return true;
+    if (/^jcv\s*sense(thunder|mercury)$/i.test(normalized)) return true;
+    if (/^senselink\s*jcv/i.test(normalized)) return true;
+    return false;
+  }
+
+  function getSenseLinkWalkthroughLabelZh(labelEn) {
+    var normalized = normalizeTocText(labelEn);
+    if (!normalized) return "设计走查";
+    var suffix = normalized.replace(/^design\s*walk\s*through\s*/i, "").replace(/^[-–—:\s]+/, "").trim();
+    if (suffix && suffix.toLowerCase() !== "design walkthrough") {
+      return "设计走查 · " + suffix;
+    }
+    return "设计走查";
+  }
+
+  function findSenseLinkFooterCutoffY(scope) {
     var pageH = Math.max(document.body.scrollHeight, 1000);
+    var cutoff = pageH * 0.88;
+    var markers = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
+    for (var i = 0; i < markers.length; i++) {
+      var txt = normalizeTocText(markers[i].innerText || "");
+      if (!txt || txt.length > 80) continue;
+      if (!SENSELINK_TOC_FOOTER_NOISE_RE.test(txt) && !/^other\s*projects$/i.test(txt)) continue;
+      var top = markers[i].getBoundingClientRect().top + window.scrollY;
+      if (top > pageH * 0.35) cutoff = Math.min(cutoff, top - 100);
+    }
+    return cutoff;
+  }
+
+  function pickDesignWalkthroughAnchor(node, txt) {
+    if (!node) return null;
+    var tag = (node.tagName || "").toLowerCase();
+    if (tag === "p" || /^h[1-4]$/.test(tag)) return node;
+    var parent = node.closest && node.closest("p, h1, h2, h3, h4");
+    if (parent && normalizeTocText(parent.innerText || "") === normalizeTocText(txt)) return parent;
+    return node;
+  }
+
+  function findSenseLinkDesignWalkthroughHeadings() {
     var scope = findProjectContainer() || document.querySelector("#container");
     if (!scope) return [];
+    var pageH = Math.max(document.body.scrollHeight, 1000);
+    var footerY = findSenseLinkFooterCutoffY(scope);
+    var minTop = 480;
+    var nodes = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var seen = new Set();
+    var rows = [];
+
+    nodes.forEach(function (node) {
+      if (!node || !node.getBoundingClientRect) return;
+      var txt = (node.innerText || "").trim();
+      if (!txt || txt.length > 120 || txt.length < 8) return;
+      if (!isDesignWalkthroughHeading(txt)) return;
+      if (isSenseLinkTocFooterNoise(txt)) return;
+
+      var style = window.getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      var top = node.getBoundingClientRect().top + window.scrollY;
+      if (top < minTop || top > footerY) return;
+
+      var labelEn = normalizeTocText(txt);
+      var key = labelEn.toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+
+      var anchor = pickDesignWalkthroughAnchor(node, labelEn);
+      if (!anchor) return;
+      var fs = parseFloat(window.getComputedStyle(anchor).fontSize) || 24;
+      rows.push({
+        el: anchor,
+        labelEn: labelEn,
+        labelZh: getSenseLinkWalkthroughLabelZh(labelEn),
+        fs: Math.round(fs),
+        top: Math.round(top)
+      });
+    });
+
+    rows.sort(function (a, b) { return a.top - b.top; });
+    if (rows.length > TOC_MAX_ITEMS) rows = rows.slice(0, TOC_MAX_ITEMS);
+    return rows;
+  }
+
+  function collectProjectSectionCandidates(minFontSize) {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var footerY = findProjectFooterCutoffY(scope);
     var all = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
     var seen = new Set();
     var rows = [];
@@ -1700,12 +2452,14 @@
       var txt = (node.innerText || "").trim();
       if (!txt || txt.length < 3 || txt.length > 90) return;
       if (/^[\u200b\s]+$/.test(txt)) return;
+      if (PROJECT_FOOTER_CUTOFF_RE.test(normalizeTocText(txt))) return;
+      if (isHuweiARProjectPage() && isDecathlonTocSectionNoise(txt)) return;
       var style = window.getComputedStyle(node);
       if (style.display === "none" || style.visibility === "hidden") return;
       var fs = parseFloat(style.fontSize);
       if (fs < minFs || fs > 100) return;
       var top = node.getBoundingClientRect().top + window.scrollY;
-      if (top < 350 || top > pageH * 0.92) return;
+      if (top < 350 || top > footerY) return;
       var key = normalizeTocText(txt).toLowerCase();
       if (!key || seen.has(key)) return;
       seen.add(key);
@@ -1727,16 +2481,295 @@
     return score;
   }
 
+  function isSenseThunderTocNoise(txt) {
+    var normalized = normalizeTocText(txt).toLowerCase();
+    if (!normalized) return true;
+    // Do not use isTocNoiseTitle here — isLikelyPersonName() treats "Physical Product" as a name.
+    if (TOC_EXACT_SKIP.test(normalizeTocText(txt))) return true;
+    if (/^jcv\s*sensethunder$/i.test(normalized)) return true;
+    if (/^sensethunder\s*jcv/i.test(normalized)) return true;
+    if (/^go\s*back$/i.test(normalized)) return true;
+    if (/^connect\s*with\s*me/i.test(normalized)) return true;
+    if (/^other\s*projects$/i.test(normalized)) return true;
+    if (/^decathlon\s*dpcp/i.test(normalized)) return true;
+    if (/^senselink\s*jcv/i.test(normalized)) return true;
+    return false;
+  }
+
+  function findSenseThunderFooterCutoffY(scope) {
+    var pageH = Math.max(document.body.scrollHeight, 1000);
+    var cutoff = pageH * 0.88;
+    var markers = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
+    for (var i = 0; i < markers.length; i++) {
+      var txt = normalizeTocText(markers[i].innerText || "");
+      if (!txt || txt.length > 80) continue;
+      if (!/^other\s*projects$/i.test(txt) && !/^decathlon\s*dpcp/i.test(txt)) continue;
+      var top = markers[i].getBoundingClientRect().top + window.scrollY;
+      if (top > pageH * 0.35) cutoff = Math.min(cutoff, top - 100);
+    }
+    return cutoff;
+  }
+
+  function pickSenseThunderSectionNode(node, txt) {
+    if (!node) return null;
+    var tag = (node.tagName || "").toLowerCase();
+    if (tag === "p" || /^h[1-4]$/.test(tag)) return node;
+    var parent = node.closest && node.closest("p, h1, h2, h3, h4");
+    if (parent && normalizeTocText(parent.innerText || "") === normalizeTocText(txt)) return parent;
+    return node;
+  }
+
+  function collectSenseThunderSectionCandidates() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var pageH = Math.max(document.body.scrollHeight, 1000);
+    var footerY = findSenseThunderFooterCutoffY(scope);
+    var all = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var seen = new Set();
+    var rows = [];
+    all.forEach(function (node) {
+      if (!node || !node.getBoundingClientRect) return;
+      var txt = (node.innerText || "").trim();
+      if (!txt || txt.length < 3 || txt.length > 120) return;
+      if (isSenseThunderTocNoise(txt)) return;
+      if (/^[\u200b\s]+$/.test(txt)) return;
+      var anchor = pickSenseThunderSectionNode(node, txt);
+      if (!anchor || !anchor.getBoundingClientRect) return;
+      var style = window.getComputedStyle(anchor);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      var fs = parseFloat(style.fontSize);
+      if (fs < 14 || fs > 120) return;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      if (top < 300 || top > footerY) return;
+      var key = normalizeTocText(txt).toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ el: anchor, text: txt, fs: Math.round(fs), top: Math.round(top) });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    return rows;
+  }
+
+  function findSenseThunderAnchorByTerms(scope, terms) {
+    if (!scope || !terms || !terms.length) return null;
+    var nodes = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    for (var i = 0; i < nodes.length; i++) {
+      var txt = (nodes[i].innerText || "").trim();
+      if (!txt || txt.length > 120) continue;
+      if (matchCustomSectionScore(txt, terms) <= 0) continue;
+      var anchor = pickSenseThunderSectionNode(nodes[i], txt);
+      if (!anchor) continue;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      return {
+        el: anchor,
+        text: txt.split(/\n+/)[0].trim() || getCustomTocLabel({ labelEn: terms[0], labelZh: terms[0] }),
+        fs: Math.round(parseFloat(window.getComputedStyle(anchor).fontSize) || 16),
+        top: Math.round(top)
+      };
+    }
+    return null;
+  }
+
+  function findSenseThunderAnchors() {
+    var tocItems = SENSETHUNDER_CUSTOM_TOC_ITEMS;
+    var scope = findProjectContainer() || document.querySelector("#container");
+    var candidates = collectSenseThunderSectionCandidates();
+    var assigned = new Array(tocItems.length).fill(null);
+    var usedEls = new Set();
+    var cursor = 0;
+
+    for (var i = 0; i < tocItems.length; i++) {
+      var best = null;
+      for (var j = cursor; j < candidates.length; j++) {
+        var current = candidates[j];
+        if (usedEls.has(current.el)) continue;
+        var score = matchCustomSectionScore(current.text, tocItems[i].terms);
+        if (score <= 0) continue;
+        best = { idx: j, item: current };
+        break;
+      }
+      if (best) {
+        assigned[i] = best.item;
+        usedEls.add(best.item.el);
+        cursor = best.idx + 1;
+      } else if (scope) {
+        var fallback = findSenseThunderAnchorByTerms(scope, tocItems[i].terms);
+        if (fallback && !usedEls.has(fallback.el)) {
+          assigned[i] = fallback;
+          usedEls.add(fallback.el);
+        }
+      }
+    }
+
+    for (var b = assigned.length - 2; b >= 0; b--) {
+      if (!assigned[b] && assigned[b + 1]) assigned[b] = assigned[b + 1];
+    }
+    for (var f = 1; f < assigned.length; f++) {
+      if (!assigned[f] && assigned[f - 1]) assigned[f] = assigned[f - 1];
+    }
+
+    var fallbackAnchor = assigned.filter(Boolean)[0] || (candidates.length ? candidates[0] : null);
+    return tocItems.map(function (item, idx) {
+      var target = assigned[idx] || fallbackAnchor;
+      if (!target) return null;
+      var label = getCustomTocLabel(item);
+      var displayText = target.text || label;
+      if (matchCustomSectionScore(displayText, item.terms) > 0) {
+        var shortLine = (displayText.split(/\n+/)[0] || "").trim();
+        if (shortLine && shortLine.length <= 80) label = shortLine;
+      }
+      if (!target.el.id || !/^kiki-(?:s|cm)-/.test(target.el.id)) target.el.id = "kiki-cm-st-" + idx;
+      return { el: target.el, text: label, fs: target.fs, top: target.top };
+    }).filter(Boolean);
+  }
+
+  function isMobileBankingTocNoise(txt) {
+    var normalized = normalizeTocText(txt).toLowerCase();
+    if (!normalized) return true;
+    if (TOC_EXACT_SKIP.test(normalizeTocText(txt))) return true;
+    if (/^mobile banking research$/i.test(normalized)) return true;
+    if (/^go\s*back$/i.test(normalized)) return true;
+    if (/^other\s*projects$/i.test(normalized)) return true;
+    if (/^questionnaire$/i.test(normalized)) return true;
+    if (/^decathlon\s*dpcp/i.test(normalized)) return true;
+    return false;
+  }
+
+  function pickMobileBankingSectionNode(node, txt) {
+    return pickSenseThunderSectionNode(node, txt);
+  }
+
+  function collectMobileBankingSectionCandidates() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var footerY = findSenseThunderFooterCutoffY(scope);
+    var all = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var seen = new Set();
+    var rows = [];
+    all.forEach(function (node) {
+      if (!node || !node.getBoundingClientRect) return;
+      var txt = (node.innerText || "").trim();
+      if (!txt || txt.length < 3 || txt.length > 120) return;
+      if (isMobileBankingTocNoise(txt)) return;
+      if (/^[\u200b\s]+$/.test(txt)) return;
+      var anchor = pickMobileBankingSectionNode(node, txt);
+      if (!anchor || !anchor.getBoundingClientRect) return;
+      var style = window.getComputedStyle(anchor);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      var fs = parseFloat(style.fontSize);
+      if (fs < 14 || fs > 100) return;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      if (top < 300 || top > footerY) return;
+      var key = normalizeTocText(txt).toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ el: anchor, text: txt, fs: Math.round(fs), top: Math.round(top) });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    return rows;
+  }
+
+  function findMobileBankingAnchorByTerms(scope, terms) {
+    if (!scope || !terms || !terms.length) return null;
+    var nodes = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var best = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var txt = (nodes[i].innerText || "").trim();
+      if (!txt || txt.length > 120) continue;
+      if (isMobileBankingTocNoise(txt)) continue;
+      if (matchCustomSectionScore(txt, terms) <= 0) continue;
+      var anchor = pickMobileBankingSectionNode(nodes[i], txt);
+      if (!anchor) continue;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      var row = {
+        el: anchor,
+        text: (txt.split(/\n+/)[0] || "").trim(),
+        fs: Math.round(parseFloat(window.getComputedStyle(anchor).fontSize) || 16),
+        top: Math.round(top)
+      };
+      if (!best || row.top < best.top) best = row;
+    }
+    return best;
+  }
+
+  function findMobileBankingAnchors() {
+    var tocItems = MOBILE_BANKING_CUSTOM_TOC_ITEMS;
+    var scope = findProjectContainer() || document.querySelector("#container");
+    var candidates = collectMobileBankingSectionCandidates();
+    var assigned = new Array(tocItems.length).fill(null);
+    var usedEls = new Set();
+    var cursor = 0;
+
+    for (var i = 0; i < tocItems.length; i++) {
+      var best = null;
+      for (var j = cursor; j < candidates.length; j++) {
+        var current = candidates[j];
+        if (usedEls.has(current.el)) continue;
+        var score = matchCustomSectionScore(current.text, tocItems[i].terms);
+        if (score <= 0) continue;
+        best = { idx: j, item: current };
+        break;
+      }
+      if (best) {
+        assigned[i] = best.item;
+        usedEls.add(best.item.el);
+        cursor = best.idx + 1;
+      } else if (scope) {
+        var fallback = findMobileBankingAnchorByTerms(scope, tocItems[i].terms);
+        if (fallback && !usedEls.has(fallback.el)) {
+          assigned[i] = fallback;
+          usedEls.add(fallback.el);
+        }
+      }
+    }
+
+    return tocItems.map(function (item, idx) {
+      var target = assigned[idx];
+      if (!target) return null;
+      if (!target.el.id || !/^kiki-(?:s|cm|mb)-/.test(target.el.id)) target.el.id = "kiki-cm-mb-" + idx;
+      return {
+        el: target.el,
+        text: getCustomTocLabel(item),
+        fs: target.fs,
+        top: target.top
+      };
+    }).filter(Boolean);
+  }
+
   function findCustomMethodologyAnchors() {
     var isSenseLink = isSenseLinkJCVPage();
     var isSenseThunder = !isSenseLink && isSenseThunderJCVPage();
-    var isDecathlon = !isSenseLink && !isSenseThunder && isDecathlonProjectPage();
-    var isSolplanet = !isSenseLink && !isSenseThunder && !isDecathlon && isSolplanetProjectPage();
-    if (!isSenseLink && !isSenseThunder && !isSolplanet && !isDecathlon) return [];
+    var isMobileBanking = !isSenseLink && !isSenseThunder && isMobileBankingProjectPage();
+    var isHuwei = !isSenseLink && !isSenseThunder && !isMobileBanking && isHuweiARProjectPage();
+    var isDecathlon =
+      !isSenseLink && !isSenseThunder && !isMobileBanking && !isHuwei && isDecathlonProjectPage();
+    var isSolplanet =
+      !isSenseLink && !isSenseThunder && !isMobileBanking && !isHuwei && !isDecathlon && isSolplanetProjectPage();
+    if (!isSenseLink && !isSenseThunder && !isMobileBanking && !isHuwei && !isSolplanet && !isDecathlon) {
+      return [];
+    }
 
-    var tocItems = isSenseLink ? SENSELINK_CUSTOM_TOC_ITEMS
-      : isSenseThunder ? SENSETHUNDER_CUSTOM_TOC_ITEMS
-      : isDecathlon ? DECATHLON_CUSTOM_TOC_ITEMS
+    if (isSenseLink) {
+      var walkthroughHeadings = findSenseLinkDesignWalkthroughHeadings();
+      if (!walkthroughHeadings.length) return [];
+      return walkthroughHeadings.map(function (item, idx) {
+        if (!item.el.id || !/^kiki-(?:s|cm)-/.test(item.el.id)) item.el.id = "kiki-cm-" + idx;
+        return {
+          el: item.el,
+          text: getCustomTocLabel(item),
+          fs: item.fs,
+          top: item.top
+        };
+      });
+    }
+
+    if (isSenseThunder) return findSenseThunderAnchors();
+
+    if (isMobileBanking) return findMobileBankingAnchors();
+
+    if (isHuwei) return findHuweiAnchors();
+
+    var tocItems = isDecathlon ? DECATHLON_CUSTOM_TOC_ITEMS
       : CUSTOM_METHOD_TOC_ITEMS;
     var candidates = collectProjectSectionCandidates(24);
     if (!candidates.length) candidates = collectProjectSectionCandidates(16);
@@ -1823,10 +2856,9 @@
   }
 
   function findProjectHeadings() {
-    var pageH = Math.max(document.body.scrollHeight, 1000);
-    // Try to scope scan to the project detail container
     var scope = findProjectContainer() || document.querySelector("#container");
     if (!scope) return [];
+    var footerY = findProjectFooterCutoffY(scope);
     var all = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4"));
     var baseCandidates = [];
     var strictResults = [];
@@ -1837,6 +2869,10 @@
       if (!txt || txt.length > 70 || txt.length < 3 || seen.has(txt)) return;
       // Skip zero-width / invisible chars
       if (/^[\u200b\s]+$/.test(txt)) return;
+      if (PROJECT_FOOTER_CUTOFF_RE.test(normalizeTocText(txt))) return;
+      if (isHuweiARProjectPage() && /^(dpcp|decathlon|pain points|ux strategy|business process|vitamin play|cockpit|portal)/i.test(txt)) {
+        return;
+      }
       var style = window.getComputedStyle(el);
       if (style.display === "none" || style.visibility === "hidden") return;
       var fs = parseFloat(style.fontSize);
@@ -1844,7 +2880,7 @@
       if (fs < 32 || fs > 100) return;
       var top = el.getBoundingClientRect().top + window.scrollY;
       if (top < 450) return; // skip hero title area
-      if (top > pageH * 0.88) return; // skip footer
+      if (top > footerY) return; // skip footer / other projects
       seen.add(txt);
       var candidate = { el: el, text: txt, fs: Math.round(fs), top: Math.round(top) };
       baseCandidates.push(candidate);
@@ -1880,6 +2916,9 @@
   }
 
   function buildProjectToc() {
+    try {
+      removeHuweiDecathlonStrayHeadings();
+    } catch (e) {}
     var toc = document.getElementById("kiki-toc");
     if (!isProjectDetailPage()) {
       if (toc) toc.remove();
@@ -1888,7 +2927,16 @@
     }
 
     var headings = findCustomMethodologyAnchors();
-    if (!headings.length) headings = findProjectHeadings();
+    if (!headings.length && isSenseThunderJCVPage()) headings = findSenseThunderAnchors();
+    if (!headings.length && isMobileBankingProjectPage()) headings = findMobileBankingAnchors();
+    if (
+      !headings.length &&
+      !isSenseLinkJCVPage() &&
+      !isMobileBankingProjectPage() &&
+      (isHuweiARProjectPage() || !isDecathlonProjectPage())
+    ) {
+      headings = findProjectHeadings();
+    }
     if (headings.length < 1) {
       if (toc) toc.remove();
       syncTocBodyClass();
@@ -1944,7 +2992,12 @@
     syncTocBodyClass();
   }
 
-  var __tocRebuild = kikiDebounceFn(buildProjectToc, 500);
+  var __tocRebuild = kikiDebounceFn(function () {
+    try {
+      removeHuweiDecathlonStrayHeadings();
+    } catch (e) {}
+    buildProjectToc();
+  }, 500);
 
   function ensureTocLangObserver() {
     if (__tocLangMo) return;
@@ -1954,8 +3007,7 @@
       if (nextLang === __tocLastLang) return;
       __tocLastLang = nextLang;
       if (!isProjectDetailPage()) return;
-      setTimeout(buildProjectToc, 80);
-      setTimeout(buildProjectToc, 260);
+      try { buildProjectToc(); } catch (e) {}
     });
     __tocLangMo.observe(document.documentElement, {
       attributes: true,
@@ -1984,6 +3036,11 @@
     __tocBuildTimer = setTimeout(buildProjectToc, 900);
     setTimeout(buildProjectToc, 2000);
     setTimeout(buildProjectToc, 4000);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 500);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 1500);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 3000);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 5000);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 8000);
 
     // Watch for dynamically added content (including Go Back link appearing)
     var root = document.getElementById("container") || document.body;
@@ -2022,10 +3079,15 @@
       }
     });
 
-    // 2. Nav links: short-text anchors in the container
+    // 2. Nav links: short-text anchors (exclude wide brand row wrappers)
     Array.from(container.querySelectorAll("a")).forEach(function (a) {
       var txt = (a.innerText || "").trim();
-      if (txt.length > 0 && txt.length < 30) kikiAddCls(a, "kiki-nav-fx");
+      if (!txt || txt.length >= 30) return;
+      if (/^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) return;
+      kikiAddCls(a, "kiki-nav-fx");
+    });
+    Array.from(container.querySelectorAll(".kiki-nav-brand, .kiki-nav-inner-brand")).forEach(function (a) {
+      kikiAddCls(a, "kiki-nav-fx");
     });
 
     // 3. Scroll-in entrance: IntersectionObserver for cards not yet visible
@@ -2092,13 +3154,35 @@
     if (!heroEl) return;
     var spotHost = getHeroSpotlightHost(heroEl);
     if (!spotHost || spotHost.getAttribute("data-kiki-spot") === "1") return;
+    var parent = spotHost.parentElement;
+    if (!parent) return;
+
     spotHost.setAttribute("data-kiki-spot", "1");
     spotHost.classList.add("kiki-hero-fx");
-    spotHost.style.setProperty("--kiki-spot-x", "50%");
-    spotHost.style.setProperty("--kiki-spot-y", "50%");
+
+    if (getComputedStyle(parent).position === "static") {
+      parent.style.position = "relative";
+    }
+
+    var glow = document.createElement("div");
+    glow.className = "kiki-hero-glow";
+    glow.setAttribute("aria-hidden", "true");
+    parent.insertBefore(glow, spotHost);
+
+    var glowPad = 140;
+    var syncGlowBox = function () {
+      var pr = parent.getBoundingClientRect();
+      var rect = spotHost.getBoundingClientRect();
+      if (!pr || !rect || !rect.width || !rect.height) return;
+      glow.style.left = (rect.left - pr.left - glowPad) + "px";
+      glow.style.top = (rect.top - pr.top - glowPad) + "px";
+      glow.style.width = (rect.width + glowPad * 2) + "px";
+      glow.style.height = (rect.height + glowPad * 2) + "px";
+    };
 
     var updateSpot = function (e) {
-      var rect = spotHost.getBoundingClientRect();
+      syncGlowBox();
+      var rect = glow.getBoundingClientRect();
       if (!rect || !rect.width || !rect.height) return;
       var x = ((e.clientX - rect.left) / rect.width) * 100;
       var y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -2106,20 +3190,23 @@
       if (x > 100) x = 100;
       if (y < 0) y = 0;
       if (y > 100) y = 100;
-      spotHost.style.setProperty("--kiki-spot-x", x.toFixed(2) + "%");
-      spotHost.style.setProperty("--kiki-spot-y", y.toFixed(2) + "%");
+      glow.style.setProperty("--kiki-spot-x", x.toFixed(2) + "%");
+      glow.style.setProperty("--kiki-spot-y", y.toFixed(2) + "%");
     };
+
+    syncGlowBox();
+    window.addEventListener("resize", syncGlowBox);
 
     spotHost.addEventListener("pointerenter", function (e) {
       updateSpot(e);
-      spotHost.classList.add("kiki-hero-lit");
+      glow.classList.add("kiki-hero-glow-lit");
     });
     spotHost.addEventListener("pointermove", function (e) {
       updateSpot(e);
-      spotHost.classList.add("kiki-hero-lit");
+      glow.classList.add("kiki-hero-glow-lit");
     });
     var clearSpot = function () {
-      spotHost.classList.remove("kiki-hero-lit");
+      glow.classList.remove("kiki-hero-glow-lit");
     };
     spotHost.addEventListener("pointerleave", clearSpot);
     spotHost.addEventListener("pointercancel", clearSpot);
@@ -2182,6 +3269,370 @@
     }, 400);
   }
 
+  /* ─── Page transition overlay (project SPA navigation) ─── */
+  var PROJECT_PATH_RE = /^\/project(-\d+)?$/;
+  var PAGE_TX_MIN_MS = 400;
+  var __pageTxActive = false;
+  var __pageTxSuppress = false;
+  var __pageTxSuppressUntil = 0;
+  var __pageTxNavToProject = false;
+  var __pageTxCardIntentUntil = 0;
+  var __pageTxShowGen = 0;
+  var __pageTxShownAt = 0;
+  var __pageTxHideTimer = null;
+  var __pageTxMaxTimer = null;
+  var __pageTxTryHideTimers = [];
+  var __pageTxMo = null;
+  var __pageTxPrefetched = {};
+  var __pageTxFallbackTimer = null;
+
+  function suppressPageTransition(ms) {
+    __pageTxSuppress = true;
+    __pageTxSuppressUntil = Date.now() + (ms || 8000);
+    __pageTxNavToProject = false;
+    __pageTxCardIntentUntil = 0;
+    cancelPageTransition(true);
+  }
+
+  function cancelPageTransition(immediate) {
+    __pageTxSuppress = true;
+    __pageTxNavToProject = false;
+    __pageTxCardIntentUntil = 0;
+    __pageTxShowGen++;
+    clearTimeout(__pageTxFallbackTimer);
+    __pageTxFallbackTimer = null;
+    stopPageTransitionWatch();
+    clearTimeout(__pageTxHideTimer);
+    var el = document.getElementById("kiki-page-transition");
+    if (el) {
+      el.classList.remove("kiki-page-transition--active", "kiki-page-transition--exit");
+      el.setAttribute("aria-hidden", "true");
+      if (immediate) {
+        el.style.transition = "none";
+        el.style.opacity = "0";
+        el.style.visibility = "hidden";
+        requestAnimationFrame(function () {
+          el.style.transition = "";
+          el.style.opacity = "";
+          el.style.visibility = "";
+        });
+      } else {
+        el.classList.add("kiki-page-transition--exit");
+      }
+    }
+    __pageTxActive = false;
+  }
+
+  function normalizeNavPath(path) {
+    var p = String(path || "/").split("?")[0].split("#")[0];
+    if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+    return p || "/";
+  }
+
+  function ensurePageTransitionEl() {
+    var el = document.getElementById("kiki-page-transition");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "kiki-page-transition";
+    el.className = "kiki-page-transition";
+    el.setAttribute("aria-hidden", "true");
+    el.setAttribute("role", "presentation");
+    el.innerHTML =
+      '<div class="kiki-page-transition__inner">' +
+      '<div class="kiki-page-transition__brand">kiki Portfolio</div>' +
+      '<div class="kiki-page-transition__dots" aria-hidden="true">' +
+      '<span class="kiki-page-transition__dot"></span>' +
+      '<span class="kiki-page-transition__dot"></span>' +
+      '<span class="kiki-page-transition__dot"></span>' +
+      "</div></div>";
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showPageTransition() {
+    if (__pageTxSuppress || Date.now() < __pageTxSuppressUntil) return;
+    clearTimeout(__pageTxHideTimer);
+    __pageTxShownAt = Date.now();
+    if (__pageTxActive) return;
+    __pageTxActive = true;
+    var el = ensurePageTransitionEl();
+    el.classList.remove("kiki-page-transition--exit");
+    el.setAttribute("aria-hidden", "false");
+    el.classList.add("kiki-page-transition--active");
+    var gen = ++__pageTxShowGen;
+    requestAnimationFrame(function () {
+      if (gen !== __pageTxShowGen || !__pageTxActive || __pageTxSuppress) return;
+      if (!el.classList.contains("kiki-page-transition--active")) {
+        el.classList.add("kiki-page-transition--active");
+      }
+    });
+  }
+
+  function hidePageTransition(force) {
+    __pageTxShowGen++;
+    if (!__pageTxActive) return;
+    var elapsed = Date.now() - (__pageTxShownAt || 0);
+    if (!force && elapsed < PAGE_TX_MIN_MS) {
+      clearTimeout(__pageTxHideTimer);
+      __pageTxHideTimer = setTimeout(function () {
+        hidePageTransition(true);
+      }, PAGE_TX_MIN_MS - elapsed);
+      return;
+    }
+    var el = document.getElementById("kiki-page-transition");
+    if (!el) {
+      __pageTxActive = false;
+      return;
+    }
+    el.classList.remove("kiki-page-transition--active");
+    el.classList.add("kiki-page-transition--exit");
+    el.setAttribute("aria-hidden", "true");
+    clearTimeout(__pageTxHideTimer);
+    __pageTxHideTimer = setTimeout(function () {
+      __pageTxActive = false;
+      __pageTxNavToProject = false;
+      el.classList.remove("kiki-page-transition--exit");
+    }, 480);
+    stopPageTransitionWatch();
+  }
+
+  function stopPageTransitionWatch() {
+    if (__pageTxMo) { __pageTxMo.disconnect(); __pageTxMo = null; }
+    clearTimeout(__pageTxMaxTimer);
+    __pageTxMaxTimer = null;
+    if (__pageTxTryHideTimers.length) {
+      __pageTxTryHideTimers.forEach(function (t) { clearTimeout(t); });
+      __pageTxTryHideTimers = [];
+    }
+  }
+
+  function isGoBackNavTarget(target) {
+    if (!target || !target.closest) return false;
+    if (target.closest("[data-kiki-go-back]")) return true;
+    var node = target;
+    for (var i = 0; i < 14 && node; i++) {
+      var txt = (node.innerText || node.textContent || "").trim();
+      if (txt.length > 0 && txt.length < 48 && /go\s*back|←\s*back|^返回$/i.test(txt)) return true;
+      var label =
+        (node.getAttribute && (node.getAttribute("aria-label") || node.getAttribute("title"))) || "";
+      if (/go\s*back|返回/i.test(label)) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function startPageTransitionWatch() {
+    stopPageTransitionWatch();
+    var root = document.getElementById("container") || document.body;
+    var tryHide = function () {
+      if (!__pageTxActive) return;
+      var path = normalizeNavPath(location.pathname);
+      if (!PROJECT_PATH_RE.test(path)) {
+        __pageTxNavToProject = false;
+        cancelPageTransition(true);
+        return;
+      }
+      __pageTxNavToProject = false;
+      if (isProjectDetailPage()) hidePageTransition();
+    };
+    __pageTxMo = new MutationObserver(tryHide);
+    __pageTxMo.observe(root, { childList: true, subtree: true });
+    [500, 900, 1400].forEach(function (ms) {
+      __pageTxTryHideTimers.push(setTimeout(tryHide, ms));
+    });
+    __pageTxMaxTimer = setTimeout(function () {
+      if (PROJECT_PATH_RE.test(normalizeNavPath(location.pathname))) {
+        hidePageTransition(true);
+      } else {
+        cancelPageTransition();
+      }
+    }, 2800);
+  }
+
+  function armCardNavTransition() {
+    if (Date.now() < __pageTxSuppressUntil) return;
+    __pageTxSuppress = false;
+    __pageTxSuppressUntil = 0;
+    __pageTxNavToProject = true;
+    __pageTxCardIntentUntil = Date.now() + 5000;
+    showPageTransition();
+    startPageTransitionWatch();
+  }
+
+  function onProjectNavIntent() {
+    armCardNavTransition();
+  }
+
+  function isProjectNavUrl(url) {
+    if (!url) return false;
+    try {
+      var u = new URL(String(url), location.origin);
+      return PROJECT_PATH_RE.test(normalizeNavPath(u.pathname));
+    } catch (e) {
+      return PROJECT_PATH_RE.test(normalizeNavPath(String(url)));
+    }
+  }
+
+  function isHomePath() {
+    var p = normalizeNavPath(location.pathname);
+    return p === "/" || p === "/index.html";
+  }
+
+  function findProjectNavLink(target) {
+    if (!target || !target.closest) return null;
+    var container = document.getElementById("container");
+    if (!container) return null;
+    var a = target.closest("a");
+    if (!a || !container.contains(a)) return null;
+    var href = a.getAttribute("href") || a.href || "";
+    return isProjectNavUrl(href) ? a : null;
+  }
+
+  function isProjectCardClickTarget(target) {
+    if (!target || !target.closest) return false;
+    if (isGoBackNavTarget(target)) return false;
+    if (isSiteChromeClick(target)) return false;
+    if (target.closest("[data-kiki-card], .kiki-proj-card-fx, .kiki-see-proj-fx")) return true;
+    var container = document.getElementById("container");
+    if (!container || !container.contains(target)) return false;
+    var node = target;
+    for (var i = 0; i < 10 && node && node !== container; i++) {
+      if (isSiteChromeClick(node)) return false;
+      if (node.hasAttribute && (node.hasAttribute("data-kiki-card") || node.classList.contains("kiki-proj-card-fx"))) {
+        return true;
+      }
+      var txt = (node.innerText || "").trim();
+      if (txt.length > 0 && txt.length <= 220 && (/See Project/i.test(txt) || /查看项目/.test(txt))) {
+        return true;
+      }
+      var rect = node.getBoundingClientRect();
+      if (
+        node.querySelector &&
+        node.querySelector("img") &&
+        rect.height >= 48 &&
+        rect.height <= 520 &&
+        rect.width >= 80 &&
+        rect.width <= 720 &&
+        parseFloat(window.getComputedStyle(node).borderRadius) >= 14
+      ) {
+        return true;
+      }
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function shouldTriggerProjectTransition(target) {
+    // Only homepage project cards (My Work). No pushState/popstate/links/inner-page nav.
+    if (!target || !isHomePath()) return false;
+    if (isGoBackNavTarget(target)) return false;
+    return isProjectCardClickTarget(target);
+  }
+
+  function resolveProjectRouteFromTarget(target) {
+    if (!target || !target.closest) return null;
+    var card = target.closest("[data-kiki-card], .kiki-proj-card-fx");
+    if (!card) return null;
+    var txt = normalizeMatchText(card.innerText || "");
+    if (!txt) return null;
+    for (var j = 0; j < PROJECT_DB.length; j++) {
+      var p = PROJECT_DB[j];
+      if (p.match && p.match.test(txt) && p.route) return p.route;
+    }
+    return null;
+  }
+
+  function scheduleProjectNavFallback(target) {
+    clearProjectNavFallback();
+    if (isSiteChromeClick(target)) return;
+    var card = target && target.closest && target.closest("[data-kiki-card], .kiki-proj-card-fx");
+    if (!card) return;
+    var route = resolveProjectRouteFromTarget(target);
+    if (!route || !isHomePath()) return;
+    __pageTxFallbackTimer = setTimeout(function () {
+      if (!isHomePath()) return;
+      try {
+        history.pushState(history.state || {}, "", route);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      } catch (err) {
+        location.assign(route);
+      }
+    }, 650);
+  }
+
+  function handleBackNavEvent(e) {
+    if (!isGoBackNavTarget(e.target)) return;
+    suppressPageTransition(12000);
+  }
+
+  function handleProjectNavIntentEvent(e) {
+    if (isSiteChromeClick(e.target)) {
+      clearProjectNavFallback();
+      return;
+    }
+    if (isGoBackNavTarget(e.target)) {
+      suppressPageTransition(12000);
+      return;
+    }
+    if (!shouldTriggerProjectTransition(e.target)) return;
+    // pointerdown: show overlay early; pointer-events:none on overlay lets click through
+    if (e.type === "pointerdown") {
+      armCardNavTransition();
+      return;
+    }
+    if (e.type === "click") {
+      if (!__pageTxActive) armCardNavTransition();
+      scheduleProjectNavFallback(e.target);
+    }
+  }
+
+  function prefetchProjectJson(path) {
+    if (!path || __pageTxPrefetched[path]) return;
+    __pageTxPrefetched[path] = true;
+    var clean = String(path).split("?")[0].replace(/\/$/, "") || "/";
+    var jsonPath = clean === "/" ? "/_index.json" : clean + ".json";
+    var urls = [
+      "/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599" + jsonPath,
+      "/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599/_cms" + jsonPath,
+    ];
+    urls.forEach(function (u) {
+      try {
+        fetch(u, { credentials: "same-origin", priority: "low" }).catch(function () {});
+      } catch (e) {}
+    });
+  }
+
+  function prefetchFromCard(card) {
+    if (!card) return;
+    var txt = normalizeMatchText(card.innerText || "");
+    if (!txt) return;
+    for (var i = 0; i < PROJECT_DB.length; i++) {
+      var p = PROJECT_DB[i];
+      if (p.match && p.match.test(txt) && p.route) {
+        prefetchProjectJson(p.route);
+        return;
+      }
+    }
+  }
+
+  document.addEventListener("pointerdown", handleBackNavEvent, true);
+  document.addEventListener("click", handleBackNavEvent, true);
+  document.addEventListener("pointerdown", handleProjectNavIntentEvent, true);
+  document.addEventListener("click", handleProjectNavIntentEvent, true);
+  /* Never preventDefault/stopPropagation on card clicks — Figma owns navigation */
+
+  document.addEventListener(
+    "mouseover",
+    function (e) {
+      var card =
+        (e.target.closest && e.target.closest("[data-kiki-card], .kiki-proj-card-fx")) ||
+        null;
+      if (!card) return;
+      prefetchFromCard(card);
+    },
+    { passive: true }
+  );
+
   /* ─── Fix About links ─── */
   function fixAboutLinks() {
     Array.from(document.querySelectorAll('a')).forEach(function(a) {
@@ -2198,6 +3649,7 @@
 
   /* ─── Boot ─── */
   function boot() {
+    syncInnerPageNavChrome();
     scheduleSiteLangSwitchRecovery();
     maybeReapplySiteZh();
     ensureZhDomObserver();
@@ -2212,6 +3664,8 @@
     setTimeout(initHeroSpotlight, 2600);
     setTimeout(fixAboutLinks, 500);
     setTimeout(fixAboutLinks, 1500);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 800);
+    setTimeout(removeHuweiDecathlonStrayHeadings, 2200);
   }
 
   function safeBoot() {
@@ -2250,9 +3704,27 @@
     else syncTocBodyClass();
   }, 200));
 
-  var _push = history.pushState;
-  history.pushState = function () {
-    _push.apply(history, arguments);
+  function handleHistoryNav(dest, applyNav) {
+    var current = normalizeNavPath(location.pathname);
+    var onProject = PROJECT_PATH_RE.test(current);
+    var normDest = dest ? normalizeNavPath(String(dest)) : null;
+    var goingProject = normDest && isProjectNavUrl(dest);
+    var leavingProject = onProject && normDest && !isProjectNavUrl(dest);
+    var goingHome =
+      onProject &&
+      (!normDest || normDest === "/" || normDest === "/index.html");
+    if (leavingProject || goingHome) {
+      suppressPageTransition(12000);
+    } else if (
+      goingProject &&
+      Date.now() < __pageTxCardIntentUntil &&
+      Date.now() >= __pageTxSuppressUntil
+    ) {
+      if (!__pageTxActive) armCardNavTransition();
+    }
+    applyNav();
+    setTimeout(syncInnerPageNavChrome, 0);
+    if (goingProject && dest) prefetchProjectJson(normalizeNavPath(String(dest)));
     chatMounted = false;
     __heroTyped = false;
     __lastI18nPath = "";
@@ -2260,8 +3732,32 @@
     setTimeout(scheduleSiteLangSwitchRecovery, 1200);
     setTimeout(normalizeDetachedSiteSwitchPlacement, 1450);
     setTimeout(fixAboutLinks, 600);
+    if (goingProject && __pageTxActive) {
+      setTimeout(function () {
+        if (isProjectDetailPage()) hidePageTransition();
+      }, 1400);
+    }
+  }
+
+  var _push = history.pushState;
+  history.pushState = function () {
+    var dest = arguments.length > 2 ? arguments[2] : null;
+    var args = arguments;
+    handleHistoryNav(dest, function () {
+      _push.apply(history, args);
+    });
+  };
+  var _replace = history.replaceState;
+  history.replaceState = function () {
+    var dest = arguments.length > 2 ? arguments[2] : null;
+    var args = arguments;
+    handleHistoryNav(dest, function () {
+      _replace.apply(history, args);
+    });
   };
   window.addEventListener("popstate", function () {
+    if (!PROJECT_PATH_RE.test(normalizeNavPath(location.pathname))) suppressPageTransition(12000);
+    syncInnerPageNavChrome();
     chatMounted = false;
     __heroTyped = false;
     __lastI18nPath = "";

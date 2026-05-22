@@ -398,6 +398,12 @@ body.kiki-chat-open { overflow: hidden; }
   right: 112px !important;
   z-index: 2147483001 !important;
 }
+/* Ask Kiki header already has a chat lang switch; hide fixed site switch while panel is open. */
+body.kiki-chat-open .kiki-site-lang-switch[data-kiki-site-switch-fixed="1"],
+.kiki-site-lang-switch[data-kiki-hidden-chat="1"] {
+  display: none !important;
+  pointer-events: none !important;
+}
 @media (max-width: 720px) {
   .kiki-site-lang-switch[data-kiki-site-switch-fixed="1"] {
     top: 8px !important;
@@ -433,11 +439,23 @@ body.kiki-chat-open { overflow: hidden; }
 .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-brand {
   margin-right: auto !important;
   min-width: 0;
+  /* Keep link only as wide as its text so hover underline matches label */
+  display: inline-block !important;
+  width: max-content !important;
+  max-width: 100%;
+  flex: 0 0 auto !important;
 }
-/* Inner pages: brand sits right after the switch, no auto margin needed */
+/* Legacy inner-brand alias — same text-width behavior as homepage brand */
 .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-inner-brand {
-  margin-right: 0 !important;
-  margin-left: 0 !important;
+  margin-right: auto !important;
+  display: inline-block !important;
+  width: max-content !important;
+  max-width: 100%;
+  flex: 0 0 auto !important;
+}
+.kiki-nav-row[data-kiki-nav-primary="1"] .kiki-site-lang-switch {
+  flex: 0 0 auto;
+  margin-left: 0;
 }
 .kiki-site-nav-right {
   margin-left: auto !important;
@@ -447,9 +465,44 @@ body.kiki-chat-open { overflow: hidden; }
   gap: 14px;
   flex-wrap: nowrap !important;
   min-width: 0;
+  flex-shrink: 0;
 }
 .kiki-site-nav-right > * {
   flex: 0 0 auto;
+}
+.kiki-nav-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-action + .kiki-nav-action {
+  margin-left: 14px;
+}
+html[data-kiki-inner-page="1"] a[data-kiki-hidden="resume-inner"],
+html[data-kiki-inner-page="1"] [role="link"][data-kiki-hidden="resume-inner"],
+html[data-kiki-inner-page="1"] button[data-kiki-hidden="resume-inner"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+html[data-kiki-inner-page="1"] .kiki-nav-brand,
+html[data-kiki-inner-page="1"] .kiki-nav-action,
+html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] a[href],
+html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] [role="link"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-brand {
+  display: inline-block !important;
+}
+html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-nav-action {
+  display: inline-flex !important;
 }
 .kiki-site-lang-switch .kiki-chat-lang-switch__btn {
   min-width: 33px;
@@ -521,6 +574,12 @@ body.kiki-chat-open { overflow: hidden; }
 .kiki-toc-link--sub { font-size: 10.5px; padding-left: 16px; color: rgba(0,0,0,.22); }
 .kiki-toc-link--sub.kiki-toc-link--active { color: #333; }
 
+[id^="kiki-cm-st-"],
+[id^="kiki-cm-"],
+[id^="kiki-s-"] {
+  scroll-margin-top: 96px;
+}
+
 /* Reserve fixed right-side space when TOC is visible */
 @media (min-width: 1281px) {
   body.kiki-has-toc #container {
@@ -585,13 +644,16 @@ body.kiki-chat-open { overflow: hidden; }
 .kiki-nav-fx {
   position: relative;
   text-decoration: none !important;
+  display: inline-block;
+  width: max-content;
+  max-width: 100%;
 }
 .kiki-nav-fx::after {
   content: '';
   position: absolute;
   bottom: -2px;
   left: 0;
-  right: 0;
+  width: 100%;
   height: 1.5px;
   background: currentColor;
   transform: scaleX(0);
@@ -616,37 +678,122 @@ body.kiki-chat-open { overflow: hidden; }
 
 .kiki-hero-fx {
   position: relative;
-  isolation: isolate;
+  z-index: 1;
   overflow: visible;
   color: #111;
   cursor: default;
-  --kiki-spot-x: 50%;
-  --kiki-spot-y: 50%;
-  --kiki-spot-inset-top: -14px;
-  --kiki-spot-inset-right: -18px;
-  --kiki-spot-inset-bottom: -18px;
-  --kiki-spot-inset-left: -12px;
 }
-.kiki-hero-fx::before {
-  content: '';
+.kiki-hero-glow {
   position: absolute;
-  inset: var(--kiki-spot-inset-top) var(--kiki-spot-inset-right) var(--kiki-spot-inset-bottom) var(--kiki-spot-inset-left);
-  border-radius: 18px;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(
-    circle 240px at var(--kiki-spot-x) var(--kiki-spot-y),
-    rgba(167, 139, 250, 0.44) 0%,
-    rgba(167, 139, 250, 0.30) 35%,
-    rgba(167, 139, 250, 0.17) 55%,
-    rgba(167, 139, 250, 0.08) 75%,
-    rgba(167, 139, 250, 0) 100%
-  );
+  border-radius: 0;
   opacity: 0;
   transition: opacity .2s ease;
+  --kiki-spot-x: 50%;
+  --kiki-spot-y: 50%;
+  background: radial-gradient(
+    circle 480px at var(--kiki-spot-x) var(--kiki-spot-y),
+    rgba(167, 139, 250, 0.30) 0%,
+    rgba(167, 139, 250, 0.18) 28%,
+    rgba(167, 139, 250, 0.09) 50%,
+    rgba(167, 139, 250, 0.03) 66%,
+    transparent 86%
+  );
+  filter: blur(22px);
 }
-.kiki-hero-fx.kiki-hero-lit::before {
+.kiki-hero-glow.kiki-hero-glow-lit {
   opacity: 1;
+}
+
+/* ─── Page transition overlay (project navigation) ─── */
+.kiki-page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Visual-only overlay: must not steal the click that triggers Figma SPA nav */
+  pointer-events: none;
+  background: #fafafa;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.42s cubic-bezier(.22, 1, .36, 1),
+              visibility 0.42s cubic-bezier(.22, 1, .36, 1);
+  will-change: opacity;
+  font-family: var(--kiki-font);
+}
+.kiki-page-transition::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 72% 58% at 50% 38%, rgba(232, 224, 240, 0.92) 0%, rgba(232, 224, 240, 0.35) 48%, transparent 72%),
+    radial-gradient(circle 280px at 18% 82%, rgba(167, 139, 250, 0.14) 0%, transparent 70%),
+    radial-gradient(circle 240px at 84% 18%, rgba(167, 139, 250, 0.10) 0%, transparent 68%);
+}
+.kiki-page-transition--active {
+  opacity: 1;
+  visibility: visible;
+}
+.kiki-page-transition--exit {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.kiki-page-transition__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  transform: translateY(10px);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(.22, 1, .36, 1),
+              opacity 0.5s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform, opacity;
+}
+.kiki-page-transition--active .kiki-page-transition__inner {
+  transform: translateY(0);
+  opacity: 1;
+}
+.kiki-page-transition__brand {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: rgba(17, 17, 17, 0.72);
+}
+.kiki-page-transition__dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.kiki-page-transition__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.55);
+  animation: kiki-tx-dot 1.1s cubic-bezier(.45, 0, .55, 1) infinite;
+  will-change: transform, opacity;
+}
+.kiki-page-transition__dot:nth-child(2) { animation-delay: 0.16s; }
+.kiki-page-transition__dot:nth-child(3) { animation-delay: 0.32s; }
+@keyframes kiki-tx-dot {
+  0%, 80%, 100% { transform: scale(0.72); opacity: 0.35; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiki-page-transition,
+  .kiki-page-transition__inner,
+  .kiki-page-transition__dot {
+    transition: none !important;
+    animation: none !important;
+  }
+  .kiki-page-transition__dot { opacity: 0.7; transform: none; }
 }
 
 /* ─── Chinese text: fix Figma's tight line-height for readability ─── */
@@ -655,6 +802,33 @@ html[data-kiki-site-lang="zh"] #container .css-16evev .css-8jci38,
 html[data-kiki-site-lang="zh"] #container .css-16evev .css-5ei2kd {
   line-height: 1.65 !important;
 }
+/* Language switch: instant content swap, no motion */
+html.kiki-lang-instant,
+html.kiki-lang-instant * {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+html.kiki-lang-instant .kiki-proj-card-fx,
+html.kiki-lang-instant .kiki-proj-card-fx.kiki-card-in {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+}
+html.kiki-lang-instant .kiki-chat-lang-switch__thumb {
+  transition: none !important;
+}
+html.kiki-lang-instant #container .textContents p,
+html.kiki-lang-instant #container .css-16evev,
+html.kiki-lang-instant #container .css-16evev .css-8jci38,
+html.kiki-lang-instant #container .css-16evev .css-5ei2kd {
+  transition: none !important;
+}
+.kiki-site-lang-switch .kiki-chat-lang-switch__thumb {
+  transition: none;
+}
+
 html[data-kiki-site-lang="zh"] #container .textContents p {
   line-height: 1.62 !important;
 }

@@ -4,6 +4,7 @@
 :root {
   --kiki-font: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
   --kiki-toc-safe-space: 260px;
+  --kiki-proj-see-bottom-space: 28px;
 }
 
 /* ——— Chat root ——— */
@@ -417,7 +418,10 @@ body.kiki-chat-open .kiki-site-lang-switch[data-kiki-site-switch-fixed="1"],
   min-width: 0;
 }
 .kiki-nav-row[data-kiki-nav-primary="1"] {
-  position: relative;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background: #fff !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
@@ -590,6 +594,160 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
 /* Only show on wide viewports where there's room */
 @media (max-width: 1280px) { #kiki-toc { display: none; } }
 
+/* ─── Homepage My Work: equal-width + equal-height project cards ─── */
+@media (min-width: 900px) {
+  /* Figma export row (.css-7zeh8v): fixed 362.667px children + mismatched image shells */
+  #container .css-7zeh8v {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    place-items: stretch !important;
+  }
+  #container .css-7zeh8v > [role="link"] {
+    flex: none !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  /* Let hover shadow extend below card (SenseThunder has extra nested shells) */
+  #container .css-7zeh8v > [role="link"]:has(.kiki-proj-card-fx.kiki-card-in:hover) {
+    overflow: visible !important;
+    z-index: 2 !important;
+  }
+  #container .css-7zeh8v > [role="link"] .kiki-proj-card-fx,
+  #container .css-7zeh8v > [role="link"] [data-kiki-card="1"],
+  #container .css-7zeh8v > [role="link"] .css-zgugw4,
+  #container .css-7zeh8v > [role="link"] .css-rgilcw {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+  #container .css-7zeh8v > [role="link"] .css-wc1msa {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+  #container .css-7zeh8v > [role="link"] img {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Project card rows (marked in JS): stretch cards + pin See Project to bottom */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    align-self: stretch !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"]:has(.kiki-proj-card-fx.kiki-card-in:hover) {
+    overflow: visible !important;
+    z-index: 2 !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] [data-kiki-card="1"],
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-fx,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-shell {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-sizing: border-box;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    padding-bottom: 0 !important;
+    box-sizing: border-box;
+  }
+  /* Top image band: match Figma 16px card radius (overflow:visible on shells was squaring tops) */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-hahlbj {
+    border-radius: 16px 16px 0 0 !important;
+    overflow: hidden !important;
+  }
+  /* Equal image band so text + See Project start at the same Y */
+  #container .css-7zeh8v[data-kiki-mywork-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa {
+    flex: 0 0 236px !important;
+    min-height: 236px !important;
+    height: 236px !important;
+    overflow: hidden !important;
+  }
+  #container .css-7zeh8v[data-kiki-mywork-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa img {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    object-fit: cover !important;
+    object-position: center top !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-5knerd,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-z578mj {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-vt5286 {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  /* Tag/meta only (See Project is hoisted to .css-vt5286 in JS) */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz {
+    flex: 0 0 auto !important;
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 24px 24px 0 !important;
+    box-sizing: border-box;
+    width: 100% !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t {
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    min-height: min-content !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  /* See Project footer: sibling below .css-8xyryz, pinned to text-column bottom */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-vt5286 > .kiki-proj-see-footer,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-vt5286 > .kiki-mywork-see-footer {
+    display: block !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
+    padding: 12px 24px 24px !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    position: static !important;
+  }
+}
+
 /* ─── Homepage hover & entrance animations ─── */
 
 /* Project card — entrance keyframe */
@@ -615,15 +773,25 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   isolation: isolate;
 }
 
-/* Hover: lift + shadow */
+/* Hover: lift + shadow — only on leaf card shells (no nested wrappers) */
 .kiki-proj-card-fx.kiki-card-in:hover {
   transform: translateY(-7px) !important;
   box-shadow: 0 22px 60px rgba(0,0,0,.12),
               0 7px 18px rgba(0,0,0,.07) !important;
-  z-index: 6 !important;
+  z-index: 1 !important;
+}
+.kiki-proj-card-fx:has(.kiki-proj-card-fx):hover {
+  transform: none !important;
+  box-shadow: none !important;
+  z-index: auto !important;
 }
 
-/* Image zoom inside the card (clipped by overflow:clip on inner wrapper) */
+/* Image zoom inside the card (clipped on media shell when card overflow is visible on hover) */
+.kiki-proj-card-fx .css-wc1msa,
+.kiki-proj-card-fx .css-hahlbj,
+.kiki-proj-card-fx .css-gt73e6 {
+  overflow: clip;
+}
 .kiki-proj-card-fx img {
   transition: transform 0.48s cubic-bezier(.22,1,.36,1);
 }
@@ -677,14 +845,12 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
 }
 
 .kiki-hero-fx {
-  position: relative;
-  z-index: 1;
   overflow: visible;
   color: #111;
   cursor: default;
 }
 .kiki-hero-glow {
-  position: absolute;
+  position: fixed;
   pointer-events: none;
   z-index: 0;
   border-radius: 0;

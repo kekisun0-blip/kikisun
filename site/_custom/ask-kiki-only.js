@@ -3053,31 +3053,243 @@
     if (el && !el.classList.contains(cls)) el.classList.add(cls);
   }
 
+  function findMyWorkColumnLink(fromEl) {
+    return fromEl && fromEl.closest && fromEl.closest("#container .css-7zeh8v > [role=\"link\"]");
+  }
+
+  function findProjectCardWrapper(fromEl) {
+    var columnLink = findMyWorkColumnLink(fromEl);
+    if (columnLink) {
+      var shell = columnLink.querySelector(":scope > .css-rgilcw");
+      if (shell && shell.querySelector("img")) return shell;
+    }
+    var candidates = [];
+    var cur = fromEl && fromEl.parentElement;
+    for (var i = 0; i < 14 && cur && cur !== document.body; i++) {
+      var style = window.getComputedStyle(cur);
+      if (parseFloat(style.borderRadius) >= 14 && cur.querySelector("img")) {
+        candidates.push(cur);
+      }
+      cur = cur.parentElement;
+    }
+    if (!candidates.length) return null;
+    for (var j = 0; j < candidates.length; j++) {
+      var overflow = window.getComputedStyle(candidates[j]).overflow;
+      if (overflow === "clip" || overflow === "hidden") return candidates[j];
+    }
+    return candidates[candidates.length - 1];
+  }
+
+  function dedupeProjectCards(container) {
+    if (!container) return;
+    Array.from(container.querySelectorAll('[data-kiki-card="1"]')).forEach(function (outer) {
+      var inner = outer.querySelector('[data-kiki-card="1"]');
+      if (!inner || inner === outer) return;
+      outer.removeAttribute("data-kiki-card");
+      outer.classList.remove("kiki-proj-card-fx", "kiki-card-in");
+      outer.style.removeProperty("--kiki-ci");
+    });
+    container.querySelectorAll(".css-7zeh8v > [role=\"link\"]").forEach(function (column) {
+      column.querySelectorAll('[role="link"]').forEach(function (inner) {
+        if (inner === column) return;
+        inner.removeAttribute("role");
+        inner.removeAttribute("tabindex");
+      });
+    });
+  }
+
+  function markMyWorkCardRow(container) {
+    if (!container) return;
+    Array.from(container.querySelectorAll(".css-7zeh8v")).forEach(function (row) {
+      var text = row.textContent || "";
+      if (
+        text.indexOf("Solplanet") !== -1 &&
+        text.indexOf("Mobile Banking") !== -1 &&
+        text.indexOf("SenseThunder") !== -1
+      ) {
+        row.setAttribute("data-kiki-mywork-row", "1");
+      }
+    });
+  }
+
+  function findMyWorkCardLeaf(column) {
+    if (!column) return null;
+    var leaves = Array.from(column.querySelectorAll(".css-rgilcw")).filter(function (shell) {
+      return (
+        shell.querySelector(":scope > .css-wc1msa") &&
+        shell.querySelector(":scope > .css-5knerd, :scope > .css-z578mj")
+      );
+    });
+    return leaves.length ? leaves[leaves.length - 1] : null;
+  }
+
+  function findMyWorkTextBody(column) {
+    if (!column) return null;
+    var leaf = column.querySelector(".kiki-proj-card-leaf") || findMyWorkCardLeaf(column);
+    if (leaf) {
+      var inLeaf = leaf.querySelector(".css-8xyryz");
+      if (inLeaf) return inLeaf;
+    }
+    return column.querySelector(".css-8xyryz");
+  }
+
+  function markProjectCardRows(container) {
+    if (!container) return;
+    markMyWorkCardRow(container);
+    Array.from(container.querySelectorAll(".css-7zeh8v")).forEach(function (row) {
+      var cols = Array.from(row.querySelectorAll(':scope > [role="link"]'));
+      if (cols.length >= 2 && row.querySelector(".kiki-see-proj-fx")) {
+        row.setAttribute("data-kiki-proj-row", "1");
+      }
+    });
+  }
+
+  function findProjectCardLeaf(column) {
+    return findMyWorkCardLeaf(column);
+  }
+
+  function findProjectTextBody(column) {
+    return findMyWorkTextBody(column);
+  }
+
+  function tagProjectSeeProjectFooters(row) {
+    if (!row) return;
+    Array.from(row.querySelectorAll(':scope > [role="link"]')).forEach(function (column) {
+      var see = column.querySelector(".kiki-see-proj-fx");
+      if (!see) return;
+      var footer = see.closest(".textContents, .css-z8b731");
+      var box8 = findProjectTextBody(column);
+      if (!footer || !box8) return;
+      footer.classList.add("kiki-proj-see-footer", "kiki-mywork-see-footer");
+      var host = box8.parentElement;
+      if (!host) return;
+      if (box8.contains(footer)) {
+        host.insertBefore(footer, box8.nextSibling);
+      }
+    });
+  }
+
+  var __projLayoutMo = null;
+  function measureProjectColumnHeight(col) {
+    if (!col) return 0;
+    var leaf = col.querySelector(".kiki-proj-card-leaf");
+    if (!leaf) return Math.ceil(col.scrollHeight || col.getBoundingClientRect().height);
+    var img = leaf.querySelector(":scope > .css-wc1msa");
+    var body = leaf.querySelector(":scope > .css-5knerd, :scope > .css-z578mj");
+    var imgH = img ? img.getBoundingClientRect().height : 236;
+    var bodyH = body ? body.scrollHeight : 0;
+    if (!bodyH) {
+      var vt = leaf.querySelector(".css-vt5286");
+      bodyH = vt ? vt.scrollHeight : 0;
+    }
+    var h = Math.ceil(imgH + bodyH);
+    var leafH = Math.ceil(leaf.scrollHeight || leaf.getBoundingClientRect().height);
+    return Math.max(h, leafH);
+  }
+  function layoutProjectCardRows() {
+    var container = document.querySelector("#container");
+    if (!container || window.innerWidth < 900) return;
+    markProjectCardRows(container);
+    tagProjectCardLeaves(container);
+    Array.from(container.querySelectorAll('.css-7zeh8v[data-kiki-proj-row="1"]')).forEach(function (row) {
+      var cols = Array.from(row.querySelectorAll(':scope > [role="link"]'));
+      if (!cols.length) return;
+      cols.forEach(function (col) {
+        col.style.removeProperty("min-height");
+        col.style.removeProperty("height");
+      });
+      var maxH = 0;
+      cols.forEach(function (col) {
+        var h = measureProjectColumnHeight(col);
+        if (h > maxH) maxH = h;
+      });
+      if (!maxH) return;
+      cols.forEach(function (col) {
+        col.style.setProperty("min-height", maxH + "px", "important");
+        col.style.setProperty("height", maxH + "px", "important");
+      });
+    });
+  }
+
+  function ensureProjectLayoutObserver() {
+    var container = document.querySelector("#container");
+    if (!container || __projLayoutMo) return;
+    __projLayoutMo = new MutationObserver(
+      kikiDebounceFn(function () {
+        if (window.innerWidth < 900) return;
+        markProjectCardRows(container);
+        layoutProjectCardRows();
+      }, 160)
+    );
+    __projLayoutMo.observe(container, { childList: true, subtree: true });
+  }
+
+  function tagProjectCardLeaves(container) {
+    if (!container) return;
+    Array.from(container.querySelectorAll('.css-7zeh8v[data-kiki-proj-row="1"]')).forEach(function (row) {
+      Array.from(row.querySelectorAll(':scope > [role="link"]')).forEach(function (column) {
+        column.querySelectorAll(".kiki-proj-card-leaf, .kiki-proj-card-shell").forEach(function (el) {
+          el.classList.remove("kiki-proj-card-leaf", "kiki-proj-card-shell");
+        });
+        var leaf = findProjectCardLeaf(column);
+        if (!leaf) return;
+        leaf.classList.add("kiki-proj-card-leaf");
+        var card = column.querySelector('[data-kiki-card="1"], .kiki-proj-card-fx');
+        var node = leaf.parentElement;
+        while (node && node !== column) {
+          if (
+            node !== leaf &&
+            card &&
+            (node === card || card.contains(node)) &&
+            (node.classList.contains("css-rgilcw") || node.classList.contains("css-zgugw4"))
+          ) {
+            node.classList.add("kiki-proj-card-shell");
+          }
+          node = node.parentElement;
+        }
+      });
+      tagProjectSeeProjectFooters(row);
+    });
+  }
+
+  function tagMyWorkSeeProjectFooters(row) {
+    tagProjectSeeProjectFooters(row);
+  }
+
+  function layoutMyWorkCards() {
+    layoutProjectCardRows();
+  }
+
+  function ensureMyWorkLayoutObserver() {
+    ensureProjectLayoutObserver();
+  }
+
+  function tagMyWorkCardLeaves(container) {
+    tagProjectCardLeaves(container);
+  }
+
   function initHoverEffects() {
     var container = document.querySelector("#container");
     if (!container) return;
 
-    // 1. Project cards: find wrapper that has an img + "See Project" text
+    markProjectCardRows(container);
+
+    // 1. Project cards: bind the innermost clipped card shell (not the outer link wrapper)
     Array.from(container.querySelectorAll("*")).forEach(function (el) {
       if (el.children.length > 0) return;
       var txt = (el.innerText || "").trim();
       if (!/^See Project/i.test(txt) && !/^查看项目/.test(txt)) return;
       kikiAddCls(el, "kiki-see-proj-fx");
-      // Walk up to find first ancestor with border-radius >= 14px that also has an img
-      var cur = el.parentElement;
-      for (var i = 0; i < 14 && cur && cur !== document.body; i++) {
-        if (
-          parseFloat(window.getComputedStyle(cur).borderRadius) >= 14 &&
-          cur.querySelector("img") &&
-          !cur.hasAttribute("data-kiki-card")
-        ) {
-          cur.setAttribute("data-kiki-card", "1");
-          kikiAddCls(cur, "kiki-proj-card-fx");
-          break;
-        }
-        cur = cur.parentElement;
-      }
+      var card = findProjectCardWrapper(el);
+      if (!card || card.hasAttribute("data-kiki-card")) return;
+      if (card.closest('[data-kiki-card="1"]')) return;
+      card.setAttribute("data-kiki-card", "1");
+      kikiAddCls(card, "kiki-proj-card-fx");
     });
+    dedupeProjectCards(container);
+    tagProjectCardLeaves(container);
+    ensureProjectLayoutObserver();
+    layoutProjectCardRows();
 
     // 2. Nav links: short-text anchors (exclude wide brand row wrappers)
     Array.from(container.querySelectorAll("a")).forEach(function (a) {
@@ -3154,28 +3366,25 @@
     if (!heroEl) return;
     var spotHost = getHeroSpotlightHost(heroEl);
     if (!spotHost || spotHost.getAttribute("data-kiki-spot") === "1") return;
-    var parent = spotHost.parentElement;
-    if (!parent) return;
 
     spotHost.setAttribute("data-kiki-spot", "1");
     spotHost.classList.add("kiki-hero-fx");
 
-    if (getComputedStyle(parent).position === "static") {
-      parent.style.position = "relative";
-    }
-
     var glow = document.createElement("div");
     glow.className = "kiki-hero-glow";
     glow.setAttribute("aria-hidden", "true");
-    parent.insertBefore(glow, spotHost);
+    document.body.appendChild(glow);
 
     var glowPad = 140;
     var syncGlowBox = function () {
-      var pr = parent.getBoundingClientRect();
       var rect = spotHost.getBoundingClientRect();
-      if (!pr || !rect || !rect.width || !rect.height) return;
-      glow.style.left = (rect.left - pr.left - glowPad) + "px";
-      glow.style.top = (rect.top - pr.top - glowPad) + "px";
+      if (!rect || !rect.width || !rect.height) {
+        glow.style.display = "none";
+        return;
+      }
+      glow.style.display = "";
+      glow.style.left = (rect.left - glowPad) + "px";
+      glow.style.top = (rect.top - glowPad) + "px";
       glow.style.width = (rect.width + glowPad * 2) + "px";
       glow.style.height = (rect.height + glowPad * 2) + "px";
     };
@@ -3196,6 +3405,7 @@
 
     syncGlowBox();
     window.addEventListener("resize", syncGlowBox);
+    window.addEventListener("scroll", syncGlowBox, { passive: true });
 
     spotHost.addEventListener("pointerenter", function (e) {
       updateSpot(e);
@@ -3658,6 +3868,8 @@
     initProjectToc();
     setTimeout(initHoverEffects, 600);
     setTimeout(initHoverEffects, 1800);
+    setTimeout(layoutProjectCardRows, 700);
+    setTimeout(layoutProjectCardRows, 1900);
     setTimeout(initHeroTypewriter, 700);
     setTimeout(initHeroSpotlight, 1000);
     setTimeout(initHeroTypewriter, 2100);
@@ -3702,6 +3914,7 @@
     try { scheduleSiteLangSwitchRecovery(); } catch (e0) {}
     if (document.getElementById("kiki-toc")) buildProjectToc();
     else syncTocBodyClass();
+    if (window.innerWidth >= 900) layoutProjectCardRows();
   }, 200));
 
   function handleHistoryNav(dest, applyNav) {

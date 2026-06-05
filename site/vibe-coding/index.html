@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Vibe Coding — Kiki Sun 的 AI 辅助创意编程工作流"/>
+  <title>Vibe Coding — Kiki Sun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --vc-font: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+      --vc-serif: "Instrument Serif", "Noto Sans SC", Georgia, serif;
+      --vc-ink: #111;
+      --vc-muted: rgba(17, 17, 17, 0.52);
+      --vc-faint: rgba(17, 17, 17, 0.28);
+      --vc-bg: #fff;
+      --vc-accent: #5b5bf0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background: var(--vc-bg);
+      color: var(--vc-ink);
+      font-family: var(--vc-font);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: opacity 0.22s ease;
+    }
+    a:hover { opacity: 0.55; }
+
+    .vc-page {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: clamp(20px, 4vw, 36px);
+      opacity: 0;
+      animation: vc-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    @keyframes vc-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .vc-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      letter-spacing: 0.02em;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .vc-nav a { white-space: nowrap; }
+
+    .vc-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: clamp(48px, 12vh, 120px) 0 clamp(64px, 14vh, 140px);
+    }
+
+    .vc-title {
+      margin: 0;
+      font-family: var(--vc-serif);
+      font-size: clamp(52px, 11vw, 96px);
+      font-weight: 400;
+      font-style: italic;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      color: rgba(17, 17, 17, 0.88);
+    }
+
+    .vc-tagline {
+      margin: 22px 0 0;
+      max-width: 28em;
+      font-size: clamp(14px, 2.2vw, 17px);
+      font-weight: 400;
+      color: var(--vc-muted);
+      letter-spacing: 0.01em;
+    }
+
+    .vc-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 18px 28px;
+      margin-top: 34px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .vc-pills a::after {
+      content: " ↗";
+      font-size: 0.92em;
+      opacity: 0.65;
+    }
+
+    .vc-body {
+      max-width: 640px;
+      margin: 0 auto;
+      padding-bottom: clamp(48px, 10vh, 96px);
+    }
+
+    .vc-section {
+      margin-bottom: 48px;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: vc-section-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .vc-section:nth-child(1) { animation-delay: 0.35s; }
+    .vc-section:nth-child(2) { animation-delay: 0.48s; }
+    .vc-section:nth-child(3) { animation-delay: 0.61s; }
+    @keyframes vc-section-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .vc-section__label {
+      margin: 0 0 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--vc-faint);
+    }
+
+    .vc-section p {
+      margin: 0 0 14px;
+      font-size: 15px;
+      line-height: 1.72;
+      color: rgba(17, 17, 17, 0.78);
+    }
+    .vc-section p:last-child { margin-bottom: 0; }
+
+    .vc-flow {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .vc-flow__step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 14px 0;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .vc-flow__step:last-child { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+    .vc-flow__num {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--vc-faint);
+      padding-top: 2px;
+    }
+    .vc-flow__text strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--vc-ink);
+    }
+    .vc-flow__text span {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--vc-muted);
+    }
+
+    .vc-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .vc-tool {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(17, 17, 17, 0.72);
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .vc-footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      align-items: end;
+      padding-top: 24px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .vc-footer__col { display: flex; flex-direction: column; gap: 6px; }
+    .vc-footer__head {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--vc-faint);
+    }
+    .vc-footer__col--right { text-align: right; color: var(--vc-faint); }
+
+    .vc-grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      z-index: 9999;
+    }
+
+    @media (max-width: 640px) {
+      .vc-footer {
+        grid-template-columns: 1fr 1fr;
+      }
+      .vc-footer__col--right {
+        grid-column: 1 / -1;
+        text-align: left;
+        padding-top: 8px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .vc-page, .vc-section { animation: none; opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="vc-grain" aria-hidden="true"></div>
+  <div class="vc-page">
+    <nav class="vc-nav" aria-label="Primary">
+      <a href="/">( Portfolio )</a>
+      <a href="/about">( About )</a>
+      <a href="/vibe-coding/">( Vibe )</a>
+    </nav>
+
+    <header class="vc-hero">
+      <h1 class="vc-title">Vibe Coding</h1>
+      <p class="vc-tagline">Where design intent meets AI-assisted creative coding — fast prototypes, real conversations, sharper decisions.</p>
+      <div class="vc-pills">
+        <a href="/project-3">Solplanet ↗</a>
+        <a href="https://cursor.com" target="_blank" rel="noopener noreferrer">Cursor ↗</a>
+      </div>
+    </header>
+
+    <main class="vc-body">
+      <section class="vc-section">
+        <h2 class="vc-section__label">What it is</h2>
+        <p>Vibe Coding 是我用在复杂产品项目里的工作方式：用 AI 辅助快速搭建可交互原型，在 Figma 定稿之前就把流程、状态与边界跑通。</p>
+        <p>它不是替代设计，而是把「想法 → 可点可看 → 团队对齐」的循环压缩到小时级。设计资产仍以 Figma 为 source of truth；Vibe Coding 补的是速度与对话效率。</p>
+      </section>
+
+      <section class="vc-section">
+        <h2 class="vc-section__label">The flow</h2>
+        <div class="vc-flow">
+          <div class="vc-flow__step">
+            <span class="vc-flow__num">01</span>
+            <div class="vc-flow__text">
+              <strong>Frame the problem</strong>
+              <span>在 Figma 里锁定信息架构与关键界面，明确要验证的假设与边界条件。</span>
+            </div>
+          </div>
+          <div class="vc-flow__step">
+            <span class="vc-flow__num">02</span>
+            <div class="vc-flow__text">
+              <strong>Vibe with AI</strong>
+              <span>在 Cursor 里用自然语言描述意图，让 AI 生成可运行的前端骨架、交互状态与数据流占位。</span>
+            </div>
+          </div>
+          <div class="vc-flow__step">
+            <span class="vc-flow__num">03</span>
+            <div class="vc-flow__text">
+              <strong>Iterate in the open</strong>
+              <span>把原型投屏给产品、工程与业务方，用真实点击替代抽象描述，快速收敛方案。</span>
+            </div>
+          </div>
+          <div class="vc-flow__step">
+            <span class="vc-flow__num">04</span>
+            <div class="vc-flow__text">
+              <strong>Return to craft</strong>
+              <span>验证通过后回到 Figma 精修视觉与组件规范；代码原型成为共识，而非最终交付物。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vc-section">
+        <h2 class="vc-section__label">Stack</h2>
+        <p>AI 负责速度与脚手架；我负责方向、品质与细节打磨。</p>
+        <div class="vc-tools">
+          <span class="vc-tool">Figma</span>
+          <span class="vc-tool">Cursor</span>
+          <span class="vc-tool">Codex</span>
+          <span class="vc-tool">Lovart</span>
+          <span class="vc-tool">Google Stitch</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="vc-footer">
+      <div class="vc-footer__col">
+        <span class="vc-footer__head">Links</span>
+        <a href="/">Portfolio ↗</a>
+        <a href="/about">About ↗</a>
+      </div>
+      <div class="vc-footer__col">
+        <span class="vc-footer__head">Created by</span>
+        <span>Kiki Sun</span>
+      </div>
+      <div class="vc-footer__col vc-footer__col--right">
+        <span>© 2026</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

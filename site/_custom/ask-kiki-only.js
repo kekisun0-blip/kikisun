@@ -259,8 +259,51 @@
   function isSiteChromeClick(target) {
     if (!target || !target.closest) return false;
     return !!target.closest(
-      ".kiki-site-lang-switch, #kiki-chat-root, #kiki-page-transition, .kiki-chat-panel, #kiki-toc, [data-kiki-nav-row], nav, header"
+      ".kiki-site-lang-switch, #kiki-chat-root, #kiki-page-transition, .kiki-chat-panel, #kiki-toc, [data-kiki-nav-row], .kiki-vibe-gate, nav, header"
     );
+  }
+
+  /* ─── Vibe Coding hidden entrance ─── */
+  var VIBE_GATE_URL = "/vibe-coding/";
+  var __vibeKeyBuf = "";
+  var __vibeGateMounted = false;
+
+  function openVibeGate() {
+    try { sessionStorage.setItem("kiki_vibe_discovered", "1"); } catch (e) {}
+    location.assign(VIBE_GATE_URL);
+  }
+
+  function initVibeGate() {
+    if (__vibeGateMounted || !isHomePath()) return;
+    __vibeGateMounted = true;
+
+    document.addEventListener("keydown", function (e) {
+      if (!isHomePath()) return;
+      var tag = e.target && e.target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var k = (e.key || "").toLowerCase();
+      if (k.length !== 1 || !/[a-z]/.test(k)) {
+        __vibeKeyBuf = "";
+        return;
+      }
+      __vibeKeyBuf = (__vibeKeyBuf + k).slice(-4);
+      if (__vibeKeyBuf === "vibe") openVibeGate();
+    });
+
+    if (document.querySelector(".kiki-vibe-gate")) return;
+    var gate = document.createElement("button");
+    gate.type = "button";
+    gate.className = "kiki-vibe-gate";
+    gate.setAttribute("aria-label", "Hidden entrance");
+    gate.innerHTML = '<span class="kiki-vibe-gate__glyph">( · )</span>';
+    gate.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      gate.classList.add("kiki-vibe-gate--found");
+      setTimeout(openVibeGate, 420);
+    });
+    document.body.appendChild(gate);
   }
 
   /* ─── Document-level language switch (capture, before project-nav hooks) ─── */
@@ -3878,6 +3921,7 @@
     setTimeout(fixAboutLinks, 1500);
     setTimeout(removeHuweiDecathlonStrayHeadings, 800);
     setTimeout(removeHuweiDecathlonStrayHeadings, 2200);
+    initVibeGate();
   }
 
   function safeBoot() {

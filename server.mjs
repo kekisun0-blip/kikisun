@@ -156,13 +156,29 @@ async function proxyToUpstream(req, res) {
   upReq.on("error", () => { res.writeHead(502); res.end("Bad Gateway"); });
 }
 
+function resolveLocalFile(urlPath) {
+  const rel = urlPath.replace(/^\//, "");
+  const direct = path.join(SITE_DIR, rel);
+  if (fs.existsSync(direct) && fs.statSync(direct).isFile()) return direct;
+
+  if (fs.existsSync(direct) && fs.statSync(direct).isDirectory()) {
+    const indexPath = path.join(direct, "index.html");
+    if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) return indexPath;
+  }
+
+  const indexAtPath = path.join(direct, "index.html");
+  if (fs.existsSync(indexAtPath) && fs.statSync(indexAtPath).isFile()) return indexAtPath;
+
+  return null;
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const urlPath = req.url.split("?")[0];
     const hasExt = /\.[a-zA-Z0-9]+$/.test(urlPath);
-    const localPath = path.join(SITE_DIR, urlPath);
+    const localPath = resolveLocalFile(urlPath);
 
-    if (fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
+    if (localPath) {
       const { filePath, mime } = resolveFilePath(req, localPath);
       return serveFile(req, res, filePath, mime);
     }

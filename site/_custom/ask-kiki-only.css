@@ -998,39 +998,3 @@ html.kiki-lang-instant #container .css-16evev .css-5ei2kd {
 html[data-kiki-site-lang="zh"] #container .textContents p {
   line-height: 1.62 !important;
 }
-
-/* ─── Vibe Coding hidden entrance (homepage) ─── */
-.kiki-vibe-gate {
-  position: fixed;
-  left: 20px;
-  bottom: 20px;
-  z-index: 2147482000;
-  margin: 0;
-  padding: 6px 10px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: auto;
-  font-family: var(--kiki-font);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: rgba(17, 17, 17, 0.12);
-  transition: color 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.kiki-vibe-gate__glyph { display: block; }
-.kiki-vibe-gate:hover,
-.kiki-vibe-gate:focus-visible {
-  color: rgba(91, 91, 240, 0.72);
-  outline: none;
-}
-.kiki-vibe-gate--found {
-  color: rgba(91, 91, 240, 0.95);
-  transform: scale(1.08);
-}
-@media (max-width: 899px) {
-  .kiki-vibe-gate {
-    left: 14px;
-    bottom: 88px;
-  }
-}

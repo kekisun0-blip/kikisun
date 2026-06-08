@@ -6,7 +6,8 @@
     "mirror": "node mirror.mjs",
     "compress-images": "node compress-images.mjs",
     "rewrite-webp": "node rewrite-webp-urls.mjs",
+    "prune-pngs": "node prune-deploy-pngs.mjs",
     "ensure-cms-stubs": "node ensure-cms-stubs.mjs",
-    "optimize-images": "node compress-images.mjs && node rewrite-webp-urls.mjs"
+    "optimize-images": "node compress-images.mjs --force && node rewrite-webp-urls.mjs && node prune-deploy-pngs.mjs"
   }
 }

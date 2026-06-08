@@ -1,45 +1,70 @@
 /**
  * compress-images.mjs
- * Converts large PNG assets to WebP alongside originals.
- * Server does content-negotiation: if Accept includes image/webp, serve .webp.
+ * Converts PNG assets to WebP, resizes oversized images, recompresses existing WebPs.
+ * GitHub Pages is static — production HTML/JSON must reference .webp directly.
  */
 import sharp from "./node_modules/sharp/lib/index.js";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const ASSETS_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), "site/_assets/v11");
-const MIN_SIZE = 100 * 1024; // only compress >100KB
-const QUALITY = 80;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ASSETS_DIR = path.join(__dirname, "site/_assets/v11");
+const MAX_DIMENSION = 1920; // site max content width
+const QUALITY = 78;
+const FORCE = process.argv.includes("--force");
 
-const files = fs.readdirSync(ASSETS_DIR).filter(f => f.endsWith(".png"));
-console.log(`Found ${files.length} PNG files`);
+function sizeMB(bytes) {
+  return (bytes / 1024 / 1024).toFixed(2);
+}
 
-let savedBytes = 0;
-let processed = 0;
+async function toWebp(srcPath) {
+  const meta = await sharp(srcPath).metadata();
+  let pipeline = sharp(srcPath);
+
+  if ((meta.width ?? 0) > MAX_DIMENSION || (meta.height ?? 0) > MAX_DIMENSION) {
+    pipeline = pipeline.resize({
+      width: (meta.width ?? 0) >= (meta.height ?? 0) ? MAX_DIMENSION : undefined,
+      height: (meta.height ?? 0) > (meta.width ?? 0) ? MAX_DIMENSION : undefined,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+  }
+
+  return pipeline.webp({ quality: QUALITY, effort: 4 }).toBuffer();
+}
+
+const pngFiles = fs.readdirSync(ASSETS_DIR).filter((f) => f.endsWith(".png"));
+console.log(`Found ${pngFiles.length} PNG files in ${ASSETS_DIR}`);
+
+let converted = 0;
+let recompressed = 0;
 let skipped = 0;
+let savedBytes = 0;
 
-for (const file of files) {
+for (const file of pngFiles) {
   const src = path.join(ASSETS_DIR, file);
   const dest = path.join(ASSETS_DIR, file.replace(".png", ".webp"));
   const origSize = fs.statSync(src).size;
+  const existingWebp = fs.existsSync(dest) ? fs.statSync(dest).size : 0;
 
-  if (origSize < MIN_SIZE) { skipped++; continue; }
-  if (fs.existsSync(dest) && fs.statSync(dest).size > 0) {
-    // Already converted — skip to save time
+  if (existingWebp > 0 && !FORCE && existingWebp < origSize * 0.5) {
     skipped++;
     continue;
   }
 
   try {
-    const webpBuf = await sharp(src).webp({ quality: QUALITY }).toBuffer();
-    if (webpBuf.length < origSize) {
+    const webpBuf = await toWebp(src);
+    const prevSize = existingWebp || origSize;
+    if (webpBuf.length < prevSize || FORCE || !existingWebp) {
       fs.writeFileSync(dest, webpBuf);
-      savedBytes += origSize - webpBuf.length;
-      processed++;
+      savedBytes += prevSize - webpBuf.length;
+      if (existingWebp) recompressed++;
+      else converted++;
       const pct = Math.round((1 - webpBuf.length / origSize) * 100);
-      const origMB = (origSize / 1024 / 1024).toFixed(1);
-      const newMB = (webpBuf.length / 1024 / 1024).toFixed(1);
-      console.log(`[${processed}] ${file.slice(0, 16)}… ${origMB}MB → ${newMB}MB (-${pct}%)`);
+      console.log(
+        `[${converted + recompressed}] ${file.slice(0, 12)}… ${sizeMB(origSize)}MB → ${sizeMB(webpBuf.length)}MB (-${pct}%)`
+      );
     } else {
       skipped++;
     }
@@ -49,5 +74,34 @@ for (const file of files) {
   }
 }
 
-console.log(`\n✓ Done: ${processed} converted, ${skipped} skipped`);
-console.log(`  Total saved: ${(savedBytes / 1024 / 1024).toFixed(0)} MB`);
+// Recompress orphan WebPs (no PNG source) that are still large
+for (const file of fs.readdirSync(ASSETS_DIR).filter((f) => f.endsWith(".webp"))) {
+  const png = file.replace(".webp", ".png");
+  if (fs.existsSync(path.join(ASSETS_DIR, png))) continue;
+
+  const dest = path.join(ASSETS_DIR, file);
+  const size = fs.statSync(dest).size;
+  if (size < 80 * 1024 && !FORCE) continue;
+
+  try {
+    const webpBuf = await toWebp(dest);
+    if (webpBuf.length < size - 1024 || FORCE) {
+      fs.writeFileSync(dest, webpBuf);
+      savedBytes += size - webpBuf.length;
+      recompressed++;
+      console.log(`[recompress] ${file.slice(0, 12)}… ${sizeMB(size)}MB → ${sizeMB(webpBuf.length)}MB`);
+    }
+  } catch {
+    /* keep original */
+  }
+}
+
+const pngTotal = pngFiles.reduce((s, f) => s + fs.statSync(path.join(ASSETS_DIR, f)).size, 0);
+const webpTotal = fs
+  .readdirSync(ASSETS_DIR)
+  .filter((f) => f.endsWith(".webp"))
+  .reduce((s, f) => s + fs.statSync(path.join(ASSETS_DIR, f)).size, 0);
+
+console.log(`\n✓ Done: ${converted} converted, ${recompressed} recompressed, ${skipped} skipped`);
+console.log(`  Saved this run: ${sizeMB(savedBytes)} MB`);
+console.log(`  Assets now: PNG ${sizeMB(pngTotal)} MB, WebP ${sizeMB(webpTotal)} MB`);

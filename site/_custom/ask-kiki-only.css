@@ -979,6 +979,11 @@ html.kiki-lang-instant .kiki-proj-card-fx.kiki-card-in {
   transform: none !important;
   animation: none !important;
 }
+html[data-kiki-about-ready="1"] #container [style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container [style*="opacity: 0"] {
+  opacity: 1 !important;
+  transform: none !important;
+}
 html.kiki-lang-instant .kiki-chat-lang-switch__thumb {
   transition: none !important;
 }

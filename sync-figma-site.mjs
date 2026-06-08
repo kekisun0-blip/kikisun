@@ -116,7 +116,7 @@ for (const p of ["/", "/about"]) {
   const { status, body } = await get(BASE + p);
   if (status === 200) {
     let html = body.toString("utf8");
-    if (p === "/") html = preserveAskKiki(html);
+    html = preserveAskKiki(html);
     const out = p === "/" ? "index.html" : "about/index.html";
     const local = path.join(OUT, out);
     fs.mkdirSync(path.dirname(local), { recursive: true });

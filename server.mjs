@@ -169,6 +169,17 @@ const server = http.createServer(async (req, res) => {
 
     if (hasExt) return proxyToUpstream(req, res);
 
+    // Dedicated About page (avoid SPA index.html showing homepage at /about)
+    const aboutCandidates = [
+      path.join(SITE_DIR, urlPath.replace(/\/$/, ""), "index.html"),
+      path.join(SITE_DIR, "about", "index.html"),
+    ];
+    for (const aboutPath of aboutCandidates) {
+      if (fs.existsSync(aboutPath) && fs.statSync(aboutPath).isFile()) {
+        return serveFile(req, res, aboutPath);
+      }
+    }
+
     // SPA route → index.html
     const indexPath = path.join(SITE_DIR, "index.html");
     if (fs.existsSync(indexPath)) return serveFile(req, res, indexPath);

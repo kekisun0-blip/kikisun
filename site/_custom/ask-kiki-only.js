@@ -3711,6 +3711,59 @@
     return p === "/" || p === "/index.html";
   }
 
+  function isAboutPath() {
+    return normalizeNavPath(location.pathname) === "/about";
+  }
+
+  function isAboutPageRendered() {
+    var root = document.getElementById("container");
+    if (!root) return false;
+    var text = root.innerText || "";
+    return /Experience design is a critical component/i.test(text) ||
+      (/Experience/i.test(text) && /Education/i.test(text) && /About Me/i.test(text));
+  }
+
+  function rewritePngAssetsToWebp(scope) {
+    var root = scope || document.getElementById("container");
+    if (!root) return;
+    root.querySelectorAll('img[src*=".png"], source[srcset*=".png"]').forEach(function (node) {
+      ["src", "srcset"].forEach(function (attr) {
+        var val = node.getAttribute(attr);
+        if (!val || val.indexOf(".png") === -1) return;
+        node.setAttribute(attr, val.replace(/([a-f0-9]{40})\.png/gi, "$1.webp"));
+      });
+    });
+  }
+
+  function revealAnimatedEntrances(scope) {
+    var root = scope || document.getElementById("container");
+    if (!root) return;
+    root.querySelectorAll('[style*="opacity:0"], [style*="opacity: 0"]').forEach(function (el) {
+      el.style.removeProperty("opacity");
+      el.style.removeProperty("transform");
+    });
+  }
+
+  function ensureAboutPageVisible() {
+    if (!isAboutPath()) return;
+    rewritePngAssetsToWebp();
+    revealAnimatedEntrances();
+    cancelPageTransition(true);
+    document.documentElement.setAttribute("data-kiki-about-ready", "1");
+  }
+
+  var __aboutRevealTimer = null;
+  function scheduleAboutPageRevealFallback() {
+    if (!isAboutPath()) return;
+    clearTimeout(__aboutRevealTimer);
+    __aboutRevealTimer = setTimeout(ensureAboutPageVisible, 2200);
+  }
+
+  function navigateToAboutPage(force) {
+    if (!force && isAboutPath() && isAboutPageRendered()) return;
+    location.assign("/about/");
+  }
+
   function findProjectNavLink(target) {
     if (!target || !target.closest) return null;
     var container = document.getElementById("container");
@@ -3874,19 +3927,16 @@
       if ((txt === 'about' || txt === '关于') &&
           href &&
           !/^(https?:\/\/127\.0\.0\.1(:\d+)?\/about|\/about)/.test(href)) {
-        a.href = '/about';
+        a.href = '/about/';
         a.removeAttribute('target');
       }
       if ((txt === 'about' || txt === '关于') && !a.__kikiAboutBound) {
         a.__kikiAboutBound = true;
         a.addEventListener('click', function(e) {
           if (e.defaultPrevented) return;
-          var path = normalizeNavPath(location.pathname);
-          if (path === '/about') return;
+          suppressPageTransition(4000);
           setTimeout(function() {
-            if (normalizeNavPath(location.pathname) !== '/about') {
-              location.assign('/about');
-            }
+            if (!isAboutPageRendered()) navigateToAboutPage(true);
           }, 500);
         });
       }
@@ -3912,6 +3962,10 @@
     setTimeout(initHeroSpotlight, 2600);
     setTimeout(fixAboutLinks, 500);
     setTimeout(fixAboutLinks, 1500);
+    ensureAboutPageVisible();
+    scheduleAboutPageRevealFallback();
+    setTimeout(ensureAboutPageVisible, 700);
+    setTimeout(ensureAboutPageVisible, 1800);
     setTimeout(removeHuweiDecathlonStrayHeadings, 800);
     setTimeout(removeHuweiDecathlonStrayHeadings, 2200);
   }

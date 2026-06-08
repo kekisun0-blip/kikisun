@@ -984,6 +984,22 @@ html[data-kiki-about-ready="1"] #container [style*="opacity: 0"] {
   opacity: 1 !important;
   transform: none !important;
 }
+/* About SSR: Figma entrance animations start hidden — show content immediately */
+html[data-kiki-about-ready="1"] #container .css-a8ck5v[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-a8ck5v[style*="opacity: 0"],
+html[data-kiki-about-ready="1"] #container .css-dj16pg[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-dj16pg[style*="opacity: 0"],
+html[data-kiki-about-ready="1"] #container .css-e6x58r[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-e6x58r[style*="opacity: 0"],
+html[data-kiki-about-ready="1"] #container .css-snkgse[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-snkgse[style*="opacity: 0"],
+html[data-kiki-about-ready="1"] #container .css-8dndzm[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-8dndzm[style*="opacity: 0"],
+html[data-kiki-about-ready="1"] #container .css-rh9jgk[style*="opacity:0"],
+html[data-kiki-about-ready="1"] #container .css-rh9jgk[style*="opacity: 0"] {
+  opacity: 1 !important;
+  transform: none !important;
+}
 html.kiki-lang-instant .kiki-chat-lang-switch__thumb {
   transition: none !important;
 }

@@ -672,20 +672,17 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
     padding-bottom: 0 !important;
     box-sizing: border-box;
   }
-  /* Top image band: match Figma 16px card radius (overflow:visible on shells was squaring tops) */
+  /* Equal 236px image band on every project row (Figma reference alignment) */
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa,
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-hahlbj {
-    border-radius: 16px 16px 0 0 !important;
-    overflow: hidden !important;
-  }
-  /* Equal image band so text + See Project start at the same Y */
-  #container .css-7zeh8v[data-kiki-mywork-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa {
     flex: 0 0 236px !important;
     min-height: 236px !important;
     height: 236px !important;
+    border-radius: 16px 16px 0 0 !important;
     overflow: hidden !important;
   }
-  #container .css-7zeh8v[data-kiki-mywork-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa img {
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-wc1msa img,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-card-leaf > .css-hahlbj img {
     width: 100% !important;
     height: 100% !important;
     max-height: 100% !important;
@@ -717,9 +714,12 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   /* Tag/meta + See Project stay in .css-8xyryz (do not hoist — breaks Figma nav) */
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz {
     flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    height: auto !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    align-content: stretch !important;
+    justify-content: start !important;
+    justify-items: start !important;
+    height: 100% !important;
     max-height: none !important;
     min-height: 0 !important;
     overflow: visible !important;
@@ -727,6 +727,7 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
     box-sizing: border-box;
     width: 100% !important;
   }
+  /* Never shrink meta/tags — overflow was covering See Project */
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t {
     flex: 0 0 auto !important;
     flex-shrink: 0 !important;
@@ -734,15 +735,83 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
     overflow: visible !important;
     width: 100% !important;
   }
-  /* Pin See Project to card bottom without moving DOM nodes */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .kiki-proj-flex-spacer {
+    grid-row: 2 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz > .css-n8r97t {
+    grid-row: 1 !important;
+    justify-self: stretch !important;
+    align-self: stretch !important;
+    max-width: none !important;
+  }
+  /* Figma .css-59rdls uses width:min-content; grid justify-items:start shrinks text — HUWEI card worst case */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t > .textContents,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t .css-vkpzlc {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  /* Tag chips (.css-pygvdh): shrink-wrap — v118 width:100% stretched .css-l876k9 borders */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t > .css-pygvdh {
+    width: fit-content !important;
+    max-width: 100% !important;
+    align-self: flex-start !important;
+    justify-content: flex-start !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t .css-59rdls,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t .css-i5gry8 {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-n8r97t {
+    text-align: left !important;
+  }
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz > .textContents:has(.kiki-see-proj-fx),
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz > .css-z8b731:has(.kiki-see-proj-fx) {
-    margin-top: auto !important;
+    grid-row: 3 !important;
+    margin-top: 0 !important;
     padding-top: 12px !important;
-    flex: 0 0 auto !important;
     width: 100% !important;
     box-sizing: border-box;
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    text-align: left !important;
   }
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-z8b731 p,
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz .kiki-see-proj-fx {
+    text-align: left !important;
+    width: 100% !important;
+  }
+}
+
+/* Figma export centers grid children + See Project footer — force left at all breakpoints */
+.kiki-proj-card-fx .css-8xyryz {
+  justify-content: start !important;
+  justify-items: start !important;
+  text-align: left !important;
+}
+.kiki-proj-card-fx .css-z8b731:has(.kiki-see-proj-fx),
+.kiki-proj-card-fx .textContents:has(.kiki-see-proj-fx) {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  justify-self: start !important;
+  text-align: left !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.kiki-proj-card-fx .kiki-see-proj-fx {
+  text-align: left !important;
+}
+.kiki-proj-card-fx .css-n8r97t > .css-pygvdh {
+  width: fit-content !important;
+  max-width: 100% !important;
+  align-self: flex-start !important;
 }
 
 /* ─── Homepage hover & entrance animations ─── */

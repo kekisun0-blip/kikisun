@@ -3161,45 +3161,97 @@
   }
 
   var __projLayoutMo = null;
+  var __projLayoutLock = false;
   function measureProjectColumnHeight(col) {
     if (!col) return 0;
     var leaf = col.querySelector(".kiki-proj-card-leaf");
     if (!leaf) return Math.ceil(col.scrollHeight || col.getBoundingClientRect().height);
     var img = leaf.querySelector(":scope > .css-wc1msa");
     var body = leaf.querySelector(":scope > .css-5knerd, :scope > .css-z578mj");
-    var imgH = img ? img.getBoundingClientRect().height : 236;
+    var box8 = col.querySelector(".css-8xyryz");
+    var n8 = col.querySelector(".css-8xyryz > .css-n8r97t");
+    var footer = col.querySelector(".css-8xyryz > .css-z8b731");
+    var inProjRow = col.closest && col.closest('[data-kiki-proj-row="1"]');
+    var imgH =
+      inProjRow && window.innerWidth >= 900
+        ? 236
+        : img
+          ? img.getBoundingClientRect().height
+          : 236;
     var bodyH = body ? body.scrollHeight : 0;
     if (!bodyH) {
       var vt = leaf.querySelector(".css-vt5286");
       bodyH = vt ? vt.scrollHeight : 0;
     }
+    if (box8) {
+      var pad = 0;
+      var cs = window.getComputedStyle(box8);
+      pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      var textStack = (n8 ? n8.scrollHeight : 0) + (footer ? footer.scrollHeight : 0) + pad;
+      bodyH = Math.max(bodyH, box8.scrollHeight, textStack);
+    }
     var h = Math.ceil(imgH + bodyH);
     var leafH = Math.ceil(leaf.scrollHeight || leaf.getBoundingClientRect().height);
-    return Math.max(h, leafH);
+    var colH = Math.ceil(col.scrollHeight || col.getBoundingClientRect().height);
+    return Math.max(h, leafH, colH);
+  }
+  function findProjectSeeProjectFooter(box8) {
+    if (!box8) return null;
+    var footer = box8.querySelector(":scope > .css-z8b731");
+    if (!footer) {
+      Array.from(box8.querySelectorAll(":scope > .textContents")).some(function (el) {
+        if (el.querySelector(".kiki-see-proj-fx")) {
+          footer = el;
+          return true;
+        }
+        return false;
+      });
+    }
+    return footer;
+  }
+  function ensureProjectFlexSpacer(column) {
+    if (!column || window.innerWidth < 900) return;
+    var box8 = column.querySelector(".css-8xyryz");
+    var footer = findProjectSeeProjectFooter(box8);
+    if (!box8 || !footer) return;
+    var spacer = box8.querySelector(":scope > .kiki-proj-flex-spacer");
+    if (!spacer) {
+      spacer = document.createElement("div");
+      spacer.className = "kiki-proj-flex-spacer";
+      spacer.setAttribute("aria-hidden", "true");
+      box8.insertBefore(spacer, footer);
+    }
+    footer.style.removeProperty("margin-top");
   }
   function layoutProjectCardRows() {
     var container = document.querySelector("#container");
-    if (!container || window.innerWidth < 900) return;
-    markProjectCardRows(container);
-    tagProjectCardLeaves(container);
-    Array.from(container.querySelectorAll('.css-7zeh8v[data-kiki-proj-row="1"]')).forEach(function (row) {
-      var cols = Array.from(row.querySelectorAll(':scope > [role="link"]'));
-      if (!cols.length) return;
-      cols.forEach(function (col) {
-        col.style.removeProperty("min-height");
-        col.style.removeProperty("height");
+    if (!container || window.innerWidth < 900 || __projLayoutLock) return;
+    __projLayoutLock = true;
+    try {
+      markProjectCardRows(container);
+      tagProjectCardLeaves(container);
+      Array.from(container.querySelectorAll('.css-7zeh8v[data-kiki-proj-row="1"]')).forEach(function (row) {
+        var cols = Array.from(row.querySelectorAll(':scope > [role="link"]'));
+        if (!cols.length) return;
+        cols.forEach(function (col) {
+          ensureProjectFlexSpacer(col);
+          col.style.removeProperty("min-height");
+          col.style.removeProperty("height");
+        });
+        var maxH = 0;
+        cols.forEach(function (col) {
+          var h = measureProjectColumnHeight(col);
+          if (h > maxH) maxH = h;
+        });
+        if (!maxH) return;
+        cols.forEach(function (col) {
+          col.style.setProperty("min-height", maxH + "px", "important");
+          col.style.setProperty("height", maxH + "px", "important");
+        });
       });
-      var maxH = 0;
-      cols.forEach(function (col) {
-        var h = measureProjectColumnHeight(col);
-        if (h > maxH) maxH = h;
-      });
-      if (!maxH) return;
-      cols.forEach(function (col) {
-        col.style.setProperty("min-height", maxH + "px", "important");
-        col.style.setProperty("height", maxH + "px", "important");
-      });
-    });
+    } finally {
+      __projLayoutLock = false;
+    }
   }
 
   function ensureProjectLayoutObserver() {
@@ -3207,7 +3259,7 @@
     if (!container || __projLayoutMo) return;
     __projLayoutMo = new MutationObserver(
       kikiDebounceFn(function () {
-        if (window.innerWidth < 900) return;
+        if (__projLayoutLock || window.innerWidth < 900) return;
         markProjectCardRows(container);
         layoutProjectCardRows();
       }, 160)
@@ -3299,7 +3351,12 @@
     Array.from(container.querySelectorAll("*")).forEach(function (el) {
       if (el.children.length > 0) return;
       var txt = (el.innerText || "").trim();
-      if (!/^See Project/i.test(txt) && !/^查看项目/.test(txt)) return;
+      if (
+        !/^See Project/i.test(txt) &&
+        !/^查看项目/.test(txt) &&
+        !/^Call to action/i.test(txt)
+      )
+        return;
       kikiAddCls(el, "kiki-see-proj-fx");
       var card = findProjectCardWrapper(el);
       if (!card || card.hasAttribute("data-kiki-card")) return;

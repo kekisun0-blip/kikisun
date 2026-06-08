@@ -3268,6 +3268,36 @@
     tagProjectCardLeaves(container);
   }
 
+  function isProjectCardInViewport(card) {
+    if (!card) return false;
+    var r = card.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    return r.bottom > 0 && r.top < vh;
+  }
+
+  function revealProjectCardsInViewport(root) {
+    var scope = root || document.getElementById("container");
+    if (!scope) return;
+    scope.querySelectorAll(".kiki-proj-card-fx:not(.kiki-card-in)").forEach(function (card) {
+      if (isProjectCardInViewport(card)) card.classList.add("kiki-card-in");
+    });
+  }
+
+  function ensureProjectCardsVisible() {
+    var container = document.getElementById("container");
+    if (!container) return;
+    revealProjectCardsInViewport(container);
+    container.querySelectorAll(".kiki-proj-card-fx:not(.kiki-card-in)").forEach(function (card) {
+      card.classList.add("kiki-card-in");
+    });
+  }
+
+  var __projCardRevealTimer = null;
+  function scheduleProjectCardRevealFallback() {
+    clearTimeout(__projCardRevealTimer);
+    __projCardRevealTimer = setTimeout(ensureProjectCardsVisible, 2200);
+  }
+
   function initHoverEffects() {
     var container = document.querySelector("#container");
     if (!container) return;
@@ -3289,7 +3319,10 @@
     dedupeProjectCards(container);
     tagProjectCardLeaves(container);
     ensureProjectLayoutObserver();
-    layoutProjectCardRows();
+    try {
+      layoutProjectCardRows();
+    } catch (e) {}
+    revealProjectCardsInViewport(container);
 
     // 2. Nav links: short-text anchors (exclude wide brand row wrappers)
     Array.from(container.querySelectorAll("a")).forEach(function (a) {
@@ -3314,16 +3347,18 @@
             }
           });
         },
-        { threshold: 0.06, rootMargin: "0px 0px -20px 0px" }
+        { threshold: 0.01, rootMargin: "0px 0px 80px 0px" }
       );
       cards.forEach(function (c, i) {
         c.style.setProperty("--kiki-ci", i % 6);
         io.observe(c);
       });
+      revealProjectCardsInViewport(container);
     } else {
       // fallback: no IO support or re-run after init
       cards.forEach(function (c) { c.classList.add("kiki-card-in"); });
     }
+    scheduleProjectCardRevealFallback();
   }
 
   /* ─── Hero Typewriter + Hover Effect ─── */

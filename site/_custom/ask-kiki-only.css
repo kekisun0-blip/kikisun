@@ -714,15 +714,16 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
     width: 100% !important;
     box-sizing: border-box;
   }
-  /* Tag/meta only (See Project is hoisted to .css-vt5286 in JS) */
+  /* Tag/meta + See Project stay in .css-8xyryz (do not hoist — breaks Figma nav) */
   #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz {
-    flex: 0 0 auto !important;
-    display: block !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
     overflow: visible !important;
-    padding: 24px 24px 0 !important;
+    padding: 24px !important;
     box-sizing: border-box;
     width: 100% !important;
   }
@@ -733,18 +734,14 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
     overflow: visible !important;
     width: 100% !important;
   }
-  /* See Project footer: sibling below .css-8xyryz, pinned to text-column bottom */
-  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-vt5286 > .kiki-proj-see-footer,
-  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-vt5286 > .kiki-mywork-see-footer {
-    display: block !important;
-    flex: 0 0 auto !important;
-    flex-shrink: 0 !important;
+  /* Pin See Project to card bottom without moving DOM nodes */
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz > .textContents:has(.kiki-see-proj-fx),
+  #container .css-7zeh8v[data-kiki-proj-row="1"] > [role="link"] .css-8xyryz > .css-z8b731:has(.kiki-see-proj-fx) {
     margin-top: auto !important;
-    margin-bottom: 0 !important;
-    padding: 12px 24px 24px !important;
+    padding-top: 12px !important;
+    flex: 0 0 auto !important;
     width: 100% !important;
     box-sizing: border-box;
-    position: static !important;
   }
 }
 

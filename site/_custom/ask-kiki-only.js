@@ -265,7 +265,8 @@
 
   /* ─── Document-level language switch (capture, before project-nav hooks) ─── */
   document.addEventListener("pointerdown", function (e) {
-    if (!isSiteChromeClick(e.target)) return;
+    if (!e.target || !e.target.closest) return;
+    if (!e.target.closest(".kiki-site-lang-switch")) return;
     clearProjectNavFallback();
     e.stopPropagation();
   }, true);
@@ -3153,20 +3154,7 @@
   }
 
   function tagProjectSeeProjectFooters(row) {
-    if (!row) return;
-    Array.from(row.querySelectorAll(':scope > [role="link"]')).forEach(function (column) {
-      var see = column.querySelector(".kiki-see-proj-fx");
-      if (!see) return;
-      var footer = see.closest(".textContents, .css-z8b731");
-      var box8 = findProjectTextBody(column);
-      if (!footer || !box8) return;
-      footer.classList.add("kiki-proj-see-footer", "kiki-mywork-see-footer");
-      var host = box8.parentElement;
-      if (!host) return;
-      if (box8.contains(footer)) {
-        host.insertBefore(footer, box8.nextSibling);
-      }
-    });
+    /* Keep See Project in place — hoisting breaks Figma React click handlers on cards. */
   }
 
   var __projLayoutMo = null;
@@ -3802,6 +3790,9 @@
       } catch (err) {
         location.assign(route);
       }
+      setTimeout(function () {
+        if (isHomePath()) location.assign(route);
+      }, 400);
     }, 650);
   }
 
@@ -3885,6 +3876,19 @@
           !/^(https?:\/\/127\.0\.0\.1(:\d+)?\/about|\/about)/.test(href)) {
         a.href = '/about';
         a.removeAttribute('target');
+      }
+      if ((txt === 'about' || txt === '关于') && !a.__kikiAboutBound) {
+        a.__kikiAboutBound = true;
+        a.addEventListener('click', function(e) {
+          if (e.defaultPrevented) return;
+          var path = normalizeNavPath(location.pathname);
+          if (path === '/about') return;
+          setTimeout(function() {
+            if (normalizeNavPath(location.pathname) !== '/about') {
+              location.assign('/about');
+            }
+          }, 500);
+        });
       }
     });
   }

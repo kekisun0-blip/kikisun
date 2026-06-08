@@ -23,19 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-
-      - run: npm ci
-
-      - name: Optimize images, WebP URLs, CMS stubs, and SPA fallback
+      - name: Prepare site (CMS stubs + SPA fallback)
         run: |
-          node compress-images.mjs
-          node rewrite-webp-urls.mjs
-          node prune-deploy-pngs.mjs
           node ensure-cms-stubs.mjs
+          node verify-deploy-assets.mjs
           cp site/index.html site/404.html
 
       - name: Setup Pages

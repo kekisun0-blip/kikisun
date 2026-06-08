@@ -23,9 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure WebP URLs and SPA fallback
+      - name: Ensure WebP URLs, CMS stubs, and SPA fallback
         run: |
           node rewrite-webp-urls.mjs
+          node ensure-cms-stubs.mjs
           cp site/index.html site/404.html
 
       - name: Setup Pages

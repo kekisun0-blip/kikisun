@@ -3836,10 +3836,7 @@
     __pageTxPrefetched[path] = true;
     var clean = String(path).split("?")[0].replace(/\/$/, "") || "/";
     var jsonPath = clean === "/" ? "/_index.json" : clean + ".json";
-    var urls = [
-      "/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599" + jsonPath,
-      "/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599/_cms" + jsonPath,
-    ];
+    var urls = ["/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599" + jsonPath];
     urls.forEach(function (u) {
       try {
         fetch(u, { credentials: "same-origin", priority: "low" }).catch(function () {});

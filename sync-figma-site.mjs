@@ -165,6 +165,8 @@ console.log("🖼  Compressing PNGs → WebP…");
 await import("./compress-images.mjs");
 console.log("🔗 Rewriting .png → .webp in HTML/JSON…");
 await import("./rewrite-webp-urls.mjs");
+console.log("📄 Ensuring CMS stub JSON…");
+await import("./ensure-cms-stubs.mjs");
 
 // 6) SPA 404 + nojekyll
 const idx = preserveAskKiki(fs.readFileSync(path.join(OUT, "index.html"), "utf8"));

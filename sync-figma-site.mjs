@@ -160,7 +160,13 @@ if (finalMissing.length) {
   finalMissing.slice(0, 10).forEach((a) => console.warn(" ", a));
 }
 
-// 5) SPA 404 + nojekyll
+// 5) WebP conversion + rewrite URLs (GitHub Pages has no content-negotiation)
+console.log("🖼  Compressing PNGs → WebP…");
+await import("./compress-images.mjs");
+console.log("🔗 Rewriting .png → .webp in HTML/JSON…");
+await import("./rewrite-webp-urls.mjs");
+
+// 6) SPA 404 + nojekyll
 const idx = preserveAskKiki(fs.readFileSync(path.join(OUT, "index.html"), "utf8"));
 fs.writeFileSync(path.join(OUT, "index.html"), idx, "utf8");
 fs.writeFileSync(path.join(OUT, "404.html"), idx, "utf8");

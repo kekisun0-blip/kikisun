@@ -935,6 +935,7 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   color: #111;
   cursor: default;
 }
+
 .kiki-hero-glow {
   position: fixed;
   pointer-events: none;

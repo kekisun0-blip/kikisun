@@ -257,6 +257,10 @@
   function clearProjectNavFallback() {
     clearTimeout(__pageTxFallbackTimer);
     __pageTxFallbackTimer = null;
+    clearTimeout(__pageTxHardNavTimer);
+    __pageTxHardNavTimer = null;
+    clearTimeout(__pageTxNudgeTimer);
+    __pageTxNudgeTimer = null;
   }
 
   function isSiteChromeClick(target) {
@@ -3564,6 +3568,7 @@
 
   /* ─── Page transition overlay (project SPA navigation) ─── */
   var PROJECT_PATH_RE = /^\/project(-\d+)?$/;
+  var JSON_SITE_BASE = "/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599";
   var PAGE_TX_MIN_MS = 400;
   var __pageTxActive = false;
   var __pageTxSuppress = false;
@@ -3578,6 +3583,35 @@
   var __pageTxMo = null;
   var __pageTxPrefetched = {};
   var __pageTxFallbackTimer = null;
+  var __pageTxHardNavTimer = null;
+  var __pageTxNudgeTimer = null;
+  var __indexJsonPrefetched = false;
+  var __projectRouteBooted = false;
+
+  function nudgeSpaRoute() {
+    try {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch (e) {}
+  }
+
+  function prefetchSiteIndexJson() {
+    if (__indexJsonPrefetched) return;
+    __indexJsonPrefetched = true;
+    try {
+      fetch(JSON_SITE_BASE + "/_index.json", { credentials: "same-origin", cache: "force-cache" }).catch(function () {});
+    } catch (e) {}
+  }
+
+  function bootProjectRouteFromUrl() {
+    var path = normalizeNavPath(location.pathname);
+    if (!PROJECT_PATH_RE.test(path) || __projectRouteBooted) return;
+    __projectRouteBooted = true;
+    prefetchSiteIndexJson();
+    prefetchProjectJson(path);
+    [0, 250, 700, 1500, 3000, 6000, 12000, 24000].forEach(function (ms) {
+      setTimeout(nudgeSpaRoute, ms);
+    });
+  }
 
   function suppressPageTransition(ms) {
     __pageTxSuppress = true;
@@ -3594,6 +3628,10 @@
     __pageTxShowGen++;
     clearTimeout(__pageTxFallbackTimer);
     __pageTxFallbackTimer = null;
+    clearTimeout(__pageTxHardNavTimer);
+    __pageTxHardNavTimer = null;
+    clearTimeout(__pageTxNudgeTimer);
+    __pageTxNudgeTimer = null;
     stopPageTransitionWatch();
     clearTimeout(__pageTxHideTimer);
     var el = document.getElementById("kiki-page-transition");
@@ -3897,6 +3935,34 @@
     return null;
   }
 
+  function navigateToProjectRoute(route) {
+    if (!route) return;
+    prefetchSiteIndexJson();
+    prefetchProjectJson(route);
+
+    __pageTxFallbackTimer = setTimeout(function () {
+      if (!isHomePath()) return;
+      try {
+        history.pushState(history.state || {}, "", route);
+        nudgeSpaRoute();
+      } catch (err) {
+        location.assign(route);
+      }
+    }, 100);
+
+    __pageTxHardNavTimer = setTimeout(function () {
+      if (isHomePath()) location.assign(route);
+    }, 900);
+
+    __pageTxNudgeTimer = setTimeout(function () {
+      var path = normalizeNavPath(location.pathname);
+      if (PROJECT_PATH_RE.test(path) && !isProjectDetailPage()) {
+        prefetchProjectJson(path);
+        nudgeSpaRoute();
+      }
+    }, 2200);
+  }
+
   function scheduleProjectNavFallback(target) {
     clearProjectNavFallback();
     if (isSiteChromeClick(target)) return;
@@ -3904,18 +3970,7 @@
     if (!card) return;
     var route = resolveProjectRouteFromTarget(target);
     if (!route || !isHomePath()) return;
-    __pageTxFallbackTimer = setTimeout(function () {
-      if (!isHomePath()) return;
-      try {
-        history.pushState(history.state || {}, "", route);
-        window.dispatchEvent(new PopStateEvent("popstate"));
-      } catch (err) {
-        location.assign(route);
-      }
-      setTimeout(function () {
-        if (isHomePath()) location.assign(route);
-      }, 400);
-    }, 650);
+    navigateToProjectRoute(route);
   }
 
   function handleBackNavEvent(e) {
@@ -3936,6 +3991,11 @@
     // pointerdown: show overlay early; pointer-events:none on overlay lets click through
     if (e.type === "pointerdown") {
       armCardNavTransition();
+      var routeEarly = resolveProjectRouteFromTarget(e.target);
+      if (routeEarly) {
+        prefetchSiteIndexJson();
+        prefetchProjectJson(routeEarly);
+      }
       return;
     }
     if (e.type === "click") {
@@ -3945,14 +4005,16 @@
   }
 
   function prefetchProjectJson(path) {
-    if (!path || __pageTxPrefetched[path]) return;
+    if (!path) return;
+    prefetchSiteIndexJson();
+    if (__pageTxPrefetched[path]) return;
     __pageTxPrefetched[path] = true;
     var clean = String(path).split("?")[0].replace(/\/$/, "") || "/";
     var jsonPath = clean === "/" ? "/_index.json" : clean + ".json";
-    var urls = ["/_json/c09d50a1-ac94-435c-b4e5-c08318bfc599" + jsonPath];
+    var urls = [JSON_SITE_BASE + jsonPath];
     urls.forEach(function (u) {
       try {
-        fetch(u, { credentials: "same-origin", priority: "low" }).catch(function () {});
+        fetch(u, { credentials: "same-origin", cache: "force-cache" }).catch(function () {});
       } catch (e) {}
     });
   }
@@ -4030,6 +4092,8 @@
     setTimeout(initHeroSpotlight, 1000);
     setTimeout(initHeroTypewriter, 2100);
     setTimeout(initHeroSpotlight, 2600);
+    prefetchSiteIndexJson();
+    bootProjectRouteFromUrl();
     setTimeout(fixAboutLinks, 500);
     setTimeout(fixAboutLinks, 1500);
     ensureAboutPageVisible();
@@ -4128,8 +4192,13 @@
       _replace.apply(history, args);
     });
   };
+  prefetchSiteIndexJson();
+  if (PROJECT_PATH_RE.test(normalizeNavPath(location.pathname))) {
+    bootProjectRouteFromUrl();
+  }
   window.addEventListener("popstate", function () {
     if (!PROJECT_PATH_RE.test(normalizeNavPath(location.pathname))) suppressPageTransition(12000);
+    else bootProjectRouteFromUrl();
     syncInnerPageNavChrome();
     chatMounted = false;
     __heroTyped = false;

@@ -7,6 +7,16 @@
   --kiki-proj-see-bottom-space: 28px;
 }
 
+/* SSR: show project cards before JS — Figma exports opacity:0 on link shells */
+#container [role="link"].css-zgugw4[style*="opacity:0"],
+#container [role="link"].css-zgugw4[style*="opacity: 0"],
+#container [role="link"].css-eq9jo9[style*="opacity:0"],
+#container [role="link"].css-eq9jo9[style*="opacity: 0"] {
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
 /* ——— Chat root ——— */
 #kiki-chat-root {
   position: fixed;
@@ -822,21 +832,31 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Base state before entrance fires */
+/* Base state: visible immediately (SSR + slow JS); hover still works after kiki-card-in */
 .kiki-proj-card-fx {
-  opacity: 0;
-  transform: translateY(28px);
+  opacity: 1 !important;
+  transform: none;
 }
 
-/* Once IntersectionObserver fires */
+/* Optional scroll-in polish — no opacity flash */
 .kiki-proj-card-fx.kiki-card-in {
-  animation: kiki-card-enter 0.62s cubic-bezier(.22,1,.36,1)
+  animation: kiki-card-enter-y 0.62s cubic-bezier(.22,1,.36,1)
     calc(var(--kiki-ci, 0) * 90ms) both;
-  /* hover transition takes over after animation ends */
   transition: transform 0.38s cubic-bezier(.22,1,.36,1),
               box-shadow 0.38s cubic-bezier(.22,1,.36,1) !important;
   will-change: transform;
   isolation: isolate;
+}
+
+@keyframes kiki-card-enter-y {
+  from { transform: translateY(28px); }
+  to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiki-proj-card-fx.kiki-card-in {
+    animation: none !important;
+  }
 }
 
 /* Hover: lift + shadow — only on leaf card shells (no nested wrappers) */

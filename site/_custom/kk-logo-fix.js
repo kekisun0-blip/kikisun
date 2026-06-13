@@ -82,11 +82,14 @@
     scan(document);
     var obs = new MutationObserver(function () { scan(document); });
     obs.observe(document.documentElement, { childList: true, subtree: true });
+    [120, 600, 1500, 3200].forEach(function (delay) {
+      setTimeout(function () { scan(document); }, delay);
+    });
   }
 
+  boot();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
-  } else {
-    boot();
   }
+  window.addEventListener("load", boot);
 })();

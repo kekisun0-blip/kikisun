@@ -3480,6 +3480,7 @@
     if (!heroEl || !isHomePath()) return;
     if (heroEl.classList.contains("kiki-hero-typing")) return;
     if (heroEl.getAttribute("data-kiki-hero-linked") === "1") return;
+    if (!isElementVisibleForLangSwitch(heroEl)) return;
 
     var text = (heroEl.textContent || "").trim();
     if (!text) return;
@@ -3534,45 +3535,79 @@
 
   function refreshHeroVibeEntry() {
     if (!isHomePath()) return;
-    var heroEl = getHomeHeroElement();
-    if (!heroEl) return;
-    if (heroEl.classList.contains("kiki-hero-typing")) return;
-    applyHeroInlineLinks(heroEl);
+    var heroes = getVisibleHomeHeroElements();
+    if (!heroes.length) {
+      var fallback = getHomeHeroElement();
+      if (fallback) heroes = [fallback];
+    }
+    heroes.forEach(function (heroEl) {
+      if (heroEl.classList.contains("kiki-hero-typing")) return;
+      applyHeroInlineLinks(heroEl);
+    });
   }
 
   function scheduleHeroVibeLink() {
     refreshHeroVibeEntry();
-    setTimeout(refreshHeroVibeEntry, 120);
-    setTimeout(refreshHeroVibeEntry, 900);
-    setTimeout(refreshHeroVibeEntry, 2400);
+    [120, 900, 2400, 4000, 6500].forEach(function (delay) {
+      setTimeout(refreshHeroVibeEntry, delay);
+    });
+  }
+
+  function isHomeHeroCandidate(node) {
+    if (!node || node.nodeType !== 1 || node.children.length > 0) return false;
+    var txt = (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
+    if (!txt || txt.length < 30) return false;
+    return (
+      /^Hi[!,]?\s*I.?m Kiki Sun/i.test(txt) ||
+      /^你好[！!，,\s]*我[是叫]?.*Kiki Sun/i.test(txt)
+    );
+  }
+
+  function getVisibleHomeHeroElements() {
+    return Array.from(document.querySelectorAll("#container p, #container span, #container div")).filter(function (node) {
+      return isHomeHeroCandidate(node) && isElementVisibleForLangSwitch(node);
+    });
+  }
+
+  function pickPrimaryHomeHero(heroes) {
+    if (!heroes || !heroes.length) return null;
+    var withAi = heroes.find(function (el) {
+      return /AI-powered|AI 驱动/i.test(el.textContent || "");
+    });
+    if (withAi) return withAi;
+    var widest = heroes.slice().sort(function (a, b) {
+      return b.getBoundingClientRect().width - a.getBoundingClientRect().width;
+    })[0];
+    return widest || heroes[0];
   }
 
   function getHomeHeroElement() {
     if (!/^\/*$/.test(location.pathname)) return null;
+
+    var visible = getVisibleHomeHeroElements();
+    if (visible.length) {
+      var heroEl = pickPrimaryHomeHero(visible);
+      visible.forEach(function (node) {
+        if (node !== heroEl) node.removeAttribute("data-kiki-hero");
+      });
+      heroEl.setAttribute("data-kiki-hero", "1");
+      if (!heroEl.getAttribute("data-kiki-hero-orig-en")) {
+        heroEl.setAttribute("data-kiki-hero-orig-en", (heroEl.textContent || "").trim());
+      }
+      return heroEl;
+    }
+
     var marked = document.querySelector("#container [data-kiki-hero='1']");
-    if (marked) return marked;
+    if (marked && isElementVisibleForLangSwitch(marked)) return marked;
+
     var spotHost = document.querySelector("#container [data-kiki-spot='1']");
     if (spotHost) {
       var hostText = Array.from(spotHost.querySelectorAll("p, span, div")).find(function (el) {
         return !!((el.innerText || el.textContent || "").replace(/\s+/g, "").trim());
       });
-      if (hostText) return hostText;
+      if (hostText && isElementVisibleForLangSwitch(hostText)) return hostText;
     }
 
-    var nodes = Array.from(document.querySelectorAll("#container p, #container span, #container div"));
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
-      if (!node || node.children.length > 0) continue;
-      var txt = (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
-      if (!txt || txt.length < 30) continue;
-      if (/^Hi[!,]?\s*I.?m Kiki Sun/i.test(txt) || /^你好[！!，,\s]*我[是叫]?.*Kiki Sun/i.test(txt)) {
-        node.setAttribute("data-kiki-hero", "1");
-        if (!node.getAttribute("data-kiki-hero-orig-en")) {
-          node.setAttribute("data-kiki-hero-orig-en", txt);
-        }
-        return node;
-      }
-    }
     return null;
   }
 
@@ -4260,6 +4295,7 @@
     var iv = setInterval(function () {
       try { scheduleSiteLangSwitchRecovery(); } catch (e) {}
       try { maybeReapplySiteZh(); } catch (e2) {}
+      try { refreshHeroVibeEntry(); } catch (e4) {}
       if (!document.querySelector(".kiki-chat-trigger")) {
         try { initAskKiki(); } catch (e3) {}
       }

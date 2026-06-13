@@ -936,6 +936,65 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   cursor: default;
 }
 
+.kiki-hero-vibe-link,
+.kiki-hero-about-link {
+  position: relative;
+  display: inline;
+  color: inherit;
+  text-decoration: none !important;
+  text-decoration-color: transparent !important;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0 0.06em;
+  margin: 0 -0.02em;
+  background: linear-gradient(transparent 62%, rgba(91, 91, 240, 0.16) 62%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease;
+}
+
+#container a.kiki-hero-vibe-link,
+#container a.kiki-hero-about-link {
+  text-decoration: none !important;
+}
+
+.kiki-hero-vibe-link::after,
+.kiki-hero-about-link::after,
+#container a.kiki-hero-vibe-link::after,
+#container a.kiki-hero-about-link::after,
+#container a.kiki-hero-vibe-link.kiki-nav-fx::after,
+#container a.kiki-hero-about-link.kiki-nav-fx::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.06em;
+  height: 2px;
+  border-radius: 2px;
+  background: #5b5bf0 !important;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.kiki-hero-vibe-link:hover,
+.kiki-hero-vibe-link:focus-visible,
+.kiki-hero-about-link:hover,
+.kiki-hero-about-link:focus-visible {
+  color: #5b5bf0;
+  background: rgba(91, 91, 240, 0.12);
+  box-shadow: 0 0 0 1px rgba(91, 91, 240, 0.18);
+  outline: none;
+}
+
+.kiki-hero-vibe-link:hover::after,
+.kiki-hero-vibe-link:focus-visible::after,
+.kiki-hero-about-link:hover::after,
+.kiki-hero-about-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
 .kiki-hero-glow {
   position: fixed;
   pointer-events: none;

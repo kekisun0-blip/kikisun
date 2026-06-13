@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 121 59" fill="none" role="img" aria-label="KK Portfolio logo">
+  <title>KK Portfolio  Classic Kiki Mark</title>
+  <!-- Left: geometric four-petal K (Kiki signature mark) -->
+  <g transform="translate(0 0.5)">
+    <rect x="0" y="0" width="58" height="58" rx="14" fill="#000000"/>
+    <circle cx="29" cy="16" r="14" fill="#fff"/>
+    <circle cx="16" cy="29" r="14" fill="#fff"/>
+    <circle cx="42" cy="29" r="14" fill="#fff"/>
+    <circle cx="29" cy="42" r="14" fill="#fff"/>
+  </g>
+  <!-- Right: eight-dot ring (Kiki secondary mark) -->
+  <g fill="#000000">
+    <circle cx="91.5" cy="8.5" r="6.8"/>
+    <circle cx="112.5" cy="29.5" r="6.8"/>
+    <circle cx="91.5" cy="50.5" r="6.8"/>
+    <circle cx="70.5" cy="29.5" r="6.8"/>
+    <circle cx="106.2" cy="14.8" r="6.8"/>
+    <circle cx="106.2" cy="44.2" r="6.8"/>
+    <circle cx="76.8" cy="44.2" r="6.8"/>
+    <circle cx="76.8" cy="14.8" r="6.8"/>
+  </g>
+</svg>

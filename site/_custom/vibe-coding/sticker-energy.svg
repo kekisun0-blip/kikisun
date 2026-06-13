@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 100" fill="none" role="img" aria-label="智慧能源">
+  <rect width="180" height="100" fill="#fff"/>
+  <path d="M36 18h108v64H36z" fill="#f4f4ff" stroke="#000" stroke-width="2.5"/>
+  <path d="M90 28l-18 34h14l-4 22 28-38H96l6-18z" fill="#5b5bf0" stroke="#000" stroke-width="2.5" stroke-linejoin="round"/>
+  <text x="90" y="82" text-anchor="middle" font-family="Inter, Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#000">智慧能源</text>
+</svg>

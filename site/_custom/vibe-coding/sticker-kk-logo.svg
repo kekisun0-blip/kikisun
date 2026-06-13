@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" height="100%" overflow="visible" preserveAspectRatio="none" style="display:block" viewBox="0 0 121.004 59.0246" width="100%">
+  <g id="Logo">
+    <g id="kiki-k-mark">
+      <rect x="0" y="0.172" width="58.853" height="58.853" rx="14" fill="#000000"/>
+      <circle cx="29.427" cy="16.172" r="14" fill="#ffffff"/>
+      <circle cx="16.427" cy="29.172" r="14" fill="#ffffff"/>
+      <circle cx="42.427" cy="29.172" r="14" fill="#ffffff"/>
+      <circle cx="29.427" cy="42.172" r="14" fill="#ffffff"/>
+    </g>
+    <circle cx="91.572" cy="8.369" r="8.369" fill="#000000"/>
+    <circle cx="112.635" cy="29.428" r="8.369" fill="#000000"/>
+    <circle cx="91.572" cy="50.588" r="8.369" fill="#000000"/>
+    <circle cx="70.416" cy="29.479" r="8.369" fill="#000000"/>
+    <circle cx="106.414" cy="14.516" r="8.369" fill="#000000"/>
+    <circle cx="106.453" cy="44.422" r="8.369" fill="#000000"/>
+    <circle cx="76.596" cy="44.401" r="8.369" fill="#000000"/>
+    <circle cx="76.568" cy="14.604" r="8.369" fill="#000000"/>
+  </g>
+</svg>

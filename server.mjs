@@ -180,6 +180,21 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Vibe Coding standalone page
+    const vibeCandidates = [
+      path.join(SITE_DIR, urlPath.replace(/\/$/, ""), "index.html"),
+      path.join(SITE_DIR, "vibe-coding", "index.html"),
+    ];
+    for (const vibePath of vibeCandidates) {
+      if (
+        /^\/vibe-coding\/?$/.test(urlPath) &&
+        fs.existsSync(vibePath) &&
+        fs.statSync(vibePath).isFile()
+      ) {
+        return serveFile(req, res, vibePath);
+      }
+    }
+
     // SPA route → index.html
     const indexPath = path.join(SITE_DIR, "index.html");
     if (fs.existsSync(indexPath)) return serveFile(req, res, indexPath);

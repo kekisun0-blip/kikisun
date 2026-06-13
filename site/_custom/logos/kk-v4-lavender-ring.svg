@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" role="img" aria-label="Lavender ring logo">
+  <title>KK Portfolio  Lavender Ring</title>
+  <!-- Soft Kiki background echo -->
+  <circle cx="50" cy="50" r="38" fill="#DAD4FF" fill-opacity="0.35"/>
+  <g fill="#000000">
+    <circle cx="50" cy="22" r="6"/>
+    <circle cx="69.7" cy="32" r="6"/>
+    <circle cx="78" cy="50" r="6"/>
+    <circle cx="69.7" cy="68" r="6"/>
+    <circle cx="50" cy="78" r="6"/>
+    <circle cx="30.3" cy="68" r="6"/>
+    <circle cx="22" cy="50" r="6"/>
+    <circle cx="30.3" cy="32" r="6"/>
+  </g>
+  <!-- Accent from Kiki UI palette -->
+  <circle cx="50" cy="50" r="7" fill="#9C94E2"/>
+</svg>

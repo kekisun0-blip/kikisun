@@ -244,14 +244,24 @@
         try { buildProjectToc(); } catch (e) {}
       });
       endInstantLangSwitch();
+      scheduleHeroVibeLink();
       return;
     }
     disconnectZhDomObserver();
     restoreSiteTranslations();
+    var heroEl = document.querySelector("#container [data-kiki-hero='1']");
+    if (heroEl) {
+      var orig = heroEl.getAttribute("data-kiki-hero-orig-en");
+      if (orig) {
+        heroEl.textContent = orig;
+        heroEl.removeAttribute("data-kiki-hero-linked");
+      }
+    }
     preserveScrollWhile(function () {
       try { buildProjectToc(); } catch (e2) {}
     });
     endInstantLangSwitch();
+    scheduleHeroVibeLink();
   }
 
   function clearProjectNavFallback() {
@@ -327,13 +337,27 @@
       if (!root) return;
 
       /* hero paragraph */
+      var heroMarked = root.querySelector("[data-kiki-hero='1']");
       walkTextNodes(root, function (tn) {
         var t = tn.nodeValue || "";
         if (t.indexOf("Hi! I'm Kiki Sun") >= 0 || t.indexOf("Hi! I am Kiki Sun") >= 0) {
           rememberTextNodeOriginal(tn);
-          tn.nodeValue = ZH_HERO_FULL;
+          var heroHost = tn.parentElement;
+          if (heroHost && heroHost.getAttribute("data-kiki-hero") === "1") {
+            heroHost.textContent = ZH_HERO_FULL;
+            heroHost.removeAttribute("data-kiki-hero-linked");
+          } else {
+            tn.nodeValue = ZH_HERO_FULL;
+            if (heroHost && heroHost.matches && heroHost.matches("#container p, #container span, #container div")) {
+              heroHost.setAttribute("data-kiki-hero", "1");
+            }
+          }
         }
       });
+      if (heroMarked) {
+        heroMarked.textContent = ZH_HERO_FULL;
+        heroMarked.removeAttribute("data-kiki-hero-linked");
+      }
 
       /* about long paragraph + general replacements */
       walkTextNodes(root, function (tn) {
@@ -376,6 +400,7 @@
       });
     } finally {
       __applyingZh = false;
+      scheduleHeroVibeLink();
     }
   }
 
@@ -3378,6 +3403,9 @@
 
     // 2. Nav links: short-text anchors (exclude wide brand row wrappers)
     Array.from(container.querySelectorAll("a")).forEach(function (a) {
+      if (a.classList.contains("kiki-hero-about-link") || a.classList.contains("kiki-hero-vibe-link")) {
+        return;
+      }
       var txt = (a.innerText || "").trim();
       if (!txt || txt.length >= 30) return;
       if (/^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) return;
@@ -3416,9 +3444,113 @@
   /* ─── Hero Typewriter + Hover Effect ─── */
   var __heroTyped = false;
   var HERO_TYPED_KEY = "kiki_hero_typed";
+  var VIBE_CODING_URL = "/vibe-coding/";
+  var ABOUT_URL = "/about/";
+
+  function escapeHeroHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function syncHeroLangText(heroEl) {
+    if (!heroEl) return;
+    heroEl.removeAttribute("data-kiki-hero-linked");
+    if (getSiteLang() === "zh") {
+      heroEl.textContent = ZH_HERO_FULL;
+      return;
+    }
+    var orig = heroEl.getAttribute("data-kiki-hero-orig-en");
+    if (orig) heroEl.textContent = orig;
+  }
+
+  function findHeroNeedle(text, needle) {
+    var idx = text.toLowerCase().indexOf(needle.toLowerCase());
+    if (idx === -1) return null;
+    return {
+      start: idx,
+      end: idx + needle.length,
+      label: text.slice(idx, idx + needle.length),
+    };
+  }
+
+  function applyHeroInlineLinks(heroEl) {
+    heroEl = heroEl || getHomeHeroElement();
+    if (!heroEl || !isHomePath()) return;
+    if (heroEl.classList.contains("kiki-hero-typing")) return;
+    if (heroEl.getAttribute("data-kiki-hero-linked") === "1") return;
+
+    var text = (heroEl.textContent || "").trim();
+    if (!text) return;
+
+    var specs = [
+      { needle: "Kiki Sun", href: ABOUT_URL, cls: "kiki-hero-about-link", aria: "About Kiki Sun" },
+      { needle: "AI-powered", href: VIBE_CODING_URL, cls: "kiki-hero-vibe-link", aria: "Explore Vibe Coding" },
+      { needle: "AI 驱动", href: VIBE_CODING_URL, cls: "kiki-hero-vibe-link", aria: "Explore Vibe Coding" },
+    ];
+
+    var matches = [];
+    specs.forEach(function (spec) {
+      var hit = findHeroNeedle(text, spec.needle);
+      if (!hit) return;
+      var overlaps = matches.some(function (m) {
+        return !(hit.end <= m.start || hit.start >= m.end);
+      });
+      if (overlaps) return;
+      matches.push({
+        start: hit.start,
+        end: hit.end,
+        label: hit.label,
+        href: spec.href,
+        cls: spec.cls,
+        aria: spec.aria,
+      });
+    });
+
+    if (!matches.length) return;
+    matches.sort(function (a, b) { return a.start - b.start; });
+
+    var html = "";
+    var cursor = 0;
+    matches.forEach(function (m) {
+      html += escapeHeroHtml(text.slice(cursor, m.start));
+      html +=
+        '<a href="' +
+        m.href +
+        '" class="' +
+        m.cls +
+        '" aria-label="' +
+        escapeHeroHtml(m.aria) +
+        '">' +
+        escapeHeroHtml(m.label) +
+        "</a>";
+      cursor = m.end;
+    });
+    html += escapeHeroHtml(text.slice(cursor));
+    heroEl.innerHTML = html;
+    heroEl.setAttribute("data-kiki-hero-linked", "1");
+  }
+
+  function refreshHeroVibeEntry() {
+    if (!isHomePath()) return;
+    var heroEl = getHomeHeroElement();
+    if (!heroEl) return;
+    if (heroEl.classList.contains("kiki-hero-typing")) return;
+    applyHeroInlineLinks(heroEl);
+  }
+
+  function scheduleHeroVibeLink() {
+    refreshHeroVibeEntry();
+    setTimeout(refreshHeroVibeEntry, 120);
+    setTimeout(refreshHeroVibeEntry, 900);
+    setTimeout(refreshHeroVibeEntry, 2400);
+  }
 
   function getHomeHeroElement() {
     if (!/^\/*$/.test(location.pathname)) return null;
+    var marked = document.querySelector("#container [data-kiki-hero='1']");
+    if (marked) return marked;
     var spotHost = document.querySelector("#container [data-kiki-spot='1']");
     if (spotHost) {
       var hostText = Array.from(spotHost.querySelectorAll("p, span, div")).find(function (el) {
@@ -3434,6 +3566,10 @@
       var txt = (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
       if (!txt || txt.length < 30) continue;
       if (/^Hi[!,]?\s*I.?m Kiki Sun/i.test(txt) || /^你好[！!，,\s]*我[是叫]?.*Kiki Sun/i.test(txt)) {
+        node.setAttribute("data-kiki-hero", "1");
+        if (!node.getAttribute("data-kiki-hero-orig-en")) {
+          node.setAttribute("data-kiki-hero-orig-en", txt);
+        }
         return node;
       }
     }
@@ -3532,6 +3668,7 @@
     if (!shouldType) {
       heroEl.setAttribute("data-kiki-typed-run", "1");
       __heroTyped = true;
+      scheduleHeroVibeLink();
       return;
     }
 
@@ -3560,6 +3697,7 @@
         } else {
           heroEl.classList.remove("kiki-hero-typing");
           heroEl.style.minHeight = "";
+          scheduleHeroVibeLink();
         }
       }
       type();
@@ -4092,6 +4230,7 @@
     setTimeout(initHeroSpotlight, 1000);
     setTimeout(initHeroTypewriter, 2100);
     setTimeout(initHeroSpotlight, 2600);
+    scheduleHeroVibeLink();
     prefetchSiteIndexJson();
     bootProjectRouteFromUrl();
     setTimeout(fixAboutLinks, 500);

@@ -1,0 +1,78 @@
+/* Hero KK logos: split combined SVG across the two Figma export slots */
+@keyframes kk-hero-logo-in-left {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes kk-hero-logo-in-right {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+#container .css-c271ib,
+#container .css-1hsi05 {
+  overflow: hidden !important;
+  visibility: visible !important;
+  will-change: transform, opacity;
+}
+
+#container .css-c271ib[data-kk-hero-animated="left"] {
+  animation: kk-hero-logo-in-left 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+#container .css-1hsi05[data-kk-hero-animated="right"] {
+  animation: kk-hero-logo-in-right 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+}
+
+#container img[data-kk-hero-logo="left"],
+#container img[data-kk-hero-logo="right"] {
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  height: 100% !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: calc(200% + 8px) !important;
+  visibility: visible !important;
+  object-fit: contain !important;
+}
+
+#container img[data-kk-hero-logo="left"] {
+  left: 0 !important;
+}
+
+#container img[data-kk-hero-logo="right"] {
+  left: calc(-100% - 8px) !important;
+}
+
+/* Footer KK logo */
+#container .css-3vz25c {
+  width: 121px !important;
+  height: 59px !important;
+  min-width: 121px !important;
+  min-height: 59px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#container .css-3vz25c img,
+#container img[data-kk-footer-logo="1"] {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #container .css-c271ib[data-kk-hero-animated],
+  #container .css-1hsi05[data-kk-hero-animated] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

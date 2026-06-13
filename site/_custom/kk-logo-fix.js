@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  var LOGO_SRC = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var FOOTER_LOGO_SRC = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var HERO_LEFT_SRC = "/_custom/logos/kk-portfolio-logo-left.svg?v=kk1";
+  var HERO_RIGHT_SRC = "/_custom/logos/kk-portfolio-logo-right.svg?v=kk1";
   var LEGACY_MARKERS = [
     "607b2d562261e395e26c1c2761fb81d7ea436dde",
     "ba99bb76c42f48d5764d167f926c3d614019efb7",
@@ -30,15 +32,16 @@
   }
 
   function patchHeroImg(img, side) {
+    var targetSrc = side === "left" ? HERO_LEFT_SRC : HERO_RIGHT_SRC;
     var already = img.getAttribute("data-kk-hero-logo") === side;
     var src = String(img.getAttribute("src") || "");
-    var needsSrc = src.indexOf("kk-portfolio-logo.svg?v=kk5") < 0;
+    var needsSrc = src.indexOf(targetSrc) < 0;
     if (already && !needsSrc) return;
 
     img.setAttribute("data-kk-hero-logo", side);
     img.removeAttribute("loading");
     img.setAttribute("alt", "");
-    if (needsSrc) img.setAttribute("src", LOGO_SRC);
+    if (needsSrc) img.setAttribute("src", targetSrc);
 
     var slot = img.closest(side === "left" ? HERO_LEFT : HERO_RIGHT);
     if (slot && !slot.getAttribute("data-kk-hero-animated")) {
@@ -57,7 +60,7 @@
 
     var src = String(img.getAttribute("src") || "");
     if (src.indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
-      img.setAttribute("src", LOGO_SRC);
+      img.setAttribute("src", FOOTER_LOGO_SRC);
     }
   }
 

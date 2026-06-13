@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 59 59" width="100%" height="100%" style="display:block">
+  <g id="kiki-k-mark">
+    <rect x="0" y="0.172" width="58.853" height="58.853" rx="14" fill="#000000"/>
+    <circle cx="29.427" cy="16.172" r="14" fill="#ffffff"/>
+    <circle cx="16.427" cy="29.172" r="14" fill="#ffffff"/>
+    <circle cx="42.427" cy="29.172" r="14" fill="#ffffff"/>
+    <circle cx="29.427" cy="42.172" r="14" fill="#ffffff"/>
+  </g>
+</svg>

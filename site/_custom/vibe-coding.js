@@ -3,7 +3,7 @@
 
   var hasGsap = typeof gsap !== "undefined";
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var TITLE_PLAIN = "Vibe ";
+  var TITLE_PLAIN = "Vibe";
   var TITLE_ACCENT = "Coding";
 
   var TERMINAL_LINES = [
@@ -21,18 +21,27 @@
 
   function renderTitle(title, plainLen, count) {
     if (count <= plainLen) {
-      title.textContent = (TITLE_PLAIN + TITLE_ACCENT).slice(0, count);
+      var plainPart = TITLE_PLAIN.slice(0, count);
+      title.innerHTML = plainPart
+        ? '<span class="vc-title__plain">' + plainPart + "</span>"
+        : "";
       return;
     }
     var accentPart = TITLE_ACCENT.slice(0, count - plainLen);
+    var accentHtml = accentPart;
+    if (accentPart === TITLE_ACCENT) {
+      accentHtml += '<span class="vc-title__ul">_</span>';
+    }
     title.innerHTML =
-      TITLE_PLAIN + '<span class="vc-title__accent">' + accentPart + "</span>";
+      '<span class="vc-title__plain">' + TITLE_PLAIN + "</span>" +
+      '<span class="vc-title__accent">' + accentHtml + "</span>";
   }
 
   function finishTitle(title) {
     title.classList.remove("vc-title--typing");
     title.innerHTML =
-      TITLE_PLAIN + '<span class="vc-title__accent">' + TITLE_ACCENT + "</span>";
+      '<span class="vc-title__plain">' + TITLE_PLAIN + "</span>" +
+      '<span class="vc-title__accent">' + TITLE_ACCENT + '<span class="vc-title__ul">_</span></span>';
     title.setAttribute("data-vc-typed", "1");
   }
 
@@ -121,6 +130,131 @@
     });
   }
 
+  function readBaseTransform(el) {
+    var transform = window.getComputedStyle(el).transform;
+    return transform === "none" ? "" : transform;
+  }
+
+  function applyDragTransform(el) {
+    var tx = parseFloat(el.dataset.vcDragTx || "0");
+    var ty = parseFloat(el.dataset.vcDragTy || "0");
+    var base = el.dataset.vcBaseTransform || "";
+    var dragPart = " translate(" + tx + "px, " + ty + "px)";
+    el.style.transform = base ? base + dragPart : "translate(" + tx + "px, " + ty + "px)";
+  }
+
+  function initHeroDrag() {
+    var layout = document.querySelector(".vc-hero__layout");
+    if (!layout || layout.getAttribute("data-vc-drag-ready") === "1") return;
+
+    var draggables = [];
+    var terminal = document.querySelector(".vc-hero__content .vc-terminal");
+    document.querySelectorAll(".vc-hero__stickers .vc-sticker").forEach(function (sticker) {
+      draggables.push(sticker);
+    });
+    if (terminal) draggables.unshift(terminal);
+    if (!draggables.length) return;
+
+    if (hasGsap) {
+      gsap.killTweensOf(draggables);
+    }
+
+    draggables.forEach(function (el) {
+      el.dataset.vcDragTx = "0";
+      el.dataset.vcDragTy = "0";
+      el.dataset.vcBaseTransform = readBaseTransform(el);
+      el.classList.add("vc-draggable");
+      applyDragTransform(el);
+    });
+
+    var stickersWrap = document.querySelector(".vc-hero__stickers");
+    if (stickersWrap) {
+      stickersWrap.style.pointerEvents = "auto";
+      stickersWrap.style.opacity = "1";
+    }
+
+    layout.setAttribute("data-vc-drag-ready", "1");
+
+    var active = null;
+    var startX = 0;
+    var startY = 0;
+    var origTx = 0;
+    var origTy = 0;
+
+    function clampTranslate(el, tx, ty) {
+      var layoutRect = layout.getBoundingClientRect();
+      el.dataset.vcDragTx = String(tx);
+      el.dataset.vcDragTy = String(ty);
+      applyDragTransform(el);
+      var rect = el.getBoundingClientRect();
+      var fixX = tx;
+      var fixY = ty;
+      if (rect.left < layoutRect.left) fixX += layoutRect.left - rect.left;
+      if (rect.top < layoutRect.top) fixY += layoutRect.top - rect.top;
+      if (rect.right > layoutRect.right) fixX -= rect.right - layoutRect.right;
+      if (rect.bottom > layoutRect.bottom) fixY -= rect.bottom - layoutRect.bottom;
+      return { tx: fixX, ty: fixY };
+    }
+
+    function resetDragPositions() {
+      draggables.forEach(function (el) {
+        el.style.transform = "";
+        el.dataset.vcDragTx = "0";
+        el.dataset.vcDragTy = "0";
+        el.dataset.vcBaseTransform = readBaseTransform(el);
+        applyDragTransform(el);
+      });
+    }
+
+    function onPointerDown(e) {
+      if (e.button !== 0) return;
+      var el = e.target.closest(".vc-draggable");
+      if (!el || !layout.contains(el)) return;
+      active = el;
+      active.classList.add("is-dragging");
+      active.setPointerCapture(e.pointerId);
+      startX = e.clientX;
+      startY = e.clientY;
+      origTx = parseFloat(active.dataset.vcDragTx || "0");
+      origTy = parseFloat(active.dataset.vcDragTy || "0");
+      e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+      if (!active) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      var pos = clampTranslate(active, origTx + dx, origTy + dy);
+      active.dataset.vcDragTx = String(pos.tx);
+      active.dataset.vcDragTy = String(pos.ty);
+      applyDragTransform(active);
+    }
+
+    function onPointerUp(e) {
+      if (!active) return;
+      active.classList.remove("is-dragging");
+      try { active.releasePointerCapture(e.pointerId); } catch (err) {}
+      active = null;
+    }
+
+    layout.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    var resizeTimer;
+    window.addEventListener("resize", function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resetDragPositions, 180);
+    });
+  }
+
+  function scheduleHeroDrag() {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(initHeroDrag);
+    });
+  }
+
   function revealHeroAfterTitle() {
     gsap.from(".vc-tagline", {
       opacity: 0,
@@ -146,26 +280,6 @@
         ease: "back.out(1.4)",
         delay: 0.2,
       });
-
-      gsap.to(".vc-sticker--s1, .vc-sticker--s3, .vc-sticker--s5", {
-        y: -8,
-        duration: 4,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: 1.2,
-        stagger: 0.35,
-      });
-
-      gsap.to(".vc-sticker--s2, .vc-sticker--s4, .vc-sticker--s6", {
-        y: -10,
-        duration: 3.6,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        delay: 1.5,
-        stagger: 0.3,
-      });
     } else if (hasGsap) {
       gsap.set(".vc-hero__stickers", { opacity: 1 });
       gsap.set(".vc-sticker", { opacity: 1, scale: 1, y: 0 });
@@ -181,6 +295,7 @@
         duration: 0.4,
         ease: "power3.out",
       });
+      scheduleHeroDrag();
     });
   }
 
@@ -239,6 +354,7 @@
 
     if (!hasGsap) {
       revealHeroAfterTitle();
+      scheduleHeroDrag();
       return;
     }
 

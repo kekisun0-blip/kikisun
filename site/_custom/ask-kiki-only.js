@@ -3587,8 +3587,7 @@
     btn.className = "kiki-mywork-vibe-btn";
     btn.setAttribute("aria-label", "Explore Vibe Coding projects");
     btn.innerHTML =
-      '<span class="kiki-mywork-vibe-btn__text">Vibe Coding \u2192</span>' +
-      '<span class="kiki-mywork-vibe-badge">NEW</span>';
+      '<span class="kiki-mywork-vibe-btn__text">Vibe Coding \u2192</span>';
 
     heading.insertAdjacentElement("afterend", btn);
   }
@@ -3630,6 +3629,9 @@
 
   function getHomeHeroElement() {
     if (!/^\/*$/.test(location.pathname)) return null;
+
+    var typing = document.querySelector("#container [data-kiki-typing-active='1']");
+    if (typing) return typing;
 
     var visible = getVisibleHomeHeroElements();
     if (visible.length) {
@@ -3733,6 +3735,17 @@
     bindHeroSpotlight(heroEl);
   }
 
+  function restoreHeroPresentation(heroEl) {
+    if (!heroEl) return;
+    heroEl.style.removeProperty("visibility");
+    heroEl.style.removeProperty("min-height");
+    heroEl.classList.remove("kiki-hero-typing");
+    heroEl.removeAttribute("data-kiki-typing-active");
+    if (heroEl.getAttribute("data-kiki-hero-linked") === "1") return;
+    var orig = heroEl.getAttribute("data-kiki-hero-orig-en");
+    if (orig) heroEl.textContent = orig;
+  }
+
   function initHeroTypewriter() {
     var heroEl = getHomeHeroElement();
     if (!heroEl) return;
@@ -3769,42 +3782,34 @@
 
     heroEl.setAttribute("data-kiki-typing-active", "1");
     var computedH = window.getComputedStyle(heroEl).height || "auto";
-    heroEl.style.visibility = "hidden";
     heroEl.style.minHeight = computedH;
+    heroEl.textContent = "";
+    heroEl.classList.add("kiki-hero-typing");
 
-    setTimeout(function () {
-      if (!document.contains(heroEl) || !isElementVisibleForLangSwitch(heroEl)) {
-        heroEl.removeAttribute("data-kiki-typing-active");
+    var i = 0;
+    var SPEED = 26;
+    function type() {
+      var current = getHomeHeroElement();
+      if (!current || current.getAttribute("data-kiki-typing-active") !== "1") {
+        restoreHeroPresentation(heroEl);
         return;
       }
-
-      heroEl.textContent = "";
-      heroEl.style.visibility = "";
-      heroEl.classList.add("kiki-hero-typing");
-
-      var i = 0;
-      var SPEED = 26;
-      function type() {
-        if (!document.contains(heroEl)) {
-          heroEl.removeAttribute("data-kiki-typing-active");
-          return;
-        }
-        if (i <= fullText.length) {
-          heroEl.textContent = fullText.slice(0, i);
-          i++;
-          setTimeout(type, SPEED);
-          return;
-        }
-        heroEl.classList.remove("kiki-hero-typing");
-        heroEl.style.minHeight = "";
-        heroEl.removeAttribute("data-kiki-typing-active");
-        heroEl.setAttribute("data-kiki-typed-run", "1");
-        try { sessionStorage.setItem(HERO_TYPED_KEY, "1"); } catch (e2) {}
-        __heroTyped = true;
-        scheduleHeroVibeLink();
+      heroEl = current;
+      if (i <= fullText.length) {
+        heroEl.textContent = fullText.slice(0, i);
+        i++;
+        setTimeout(type, SPEED);
+        return;
       }
-      type();
-    }, 400);
+      heroEl.classList.remove("kiki-hero-typing");
+      heroEl.style.minHeight = "";
+      heroEl.removeAttribute("data-kiki-typing-active");
+      heroEl.setAttribute("data-kiki-typed-run", "1");
+      try { sessionStorage.setItem(HERO_TYPED_KEY, "1"); } catch (e2) {}
+      __heroTyped = true;
+      scheduleHeroVibeLink();
+    }
+    type();
   }
 
   function scheduleHeroTypewriter() {

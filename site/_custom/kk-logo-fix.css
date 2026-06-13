@@ -13,12 +13,12 @@
 #container .css-1hsi05:not([data-kk-hero-animated]) {
   opacity: 0 !important;
   visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 #container .css-c271ib,
 #container .css-1hsi05 {
   overflow: hidden !important;
-  visibility: visible !important;
   will-change: transform, opacity;
 }
 

@@ -995,6 +995,95 @@ html[data-kiki-inner-page="1"] .kiki-nav-row[data-kiki-nav-primary="1"] .kiki-na
   transform: scaleX(1);
 }
 
+/* My work section: Vibe Coding entry */
+#container .css-ch23jh:has(.kiki-mywork-vibe-btn) {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+}
+
+#container .css-7nejrc:has(.kiki-mywork-vibe-btn) {
+  position: relative;
+  z-index: 4;
+}
+
+.kiki-mywork-vibe-btn {
+  position: relative;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1.5px solid #000;
+  border-radius: 8px;
+  font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #000;
+  text-decoration: none !important;
+  background: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.kiki-mywork-vibe-btn::after,
+.kiki-mywork-vibe-btn.kiki-nav-fx::after {
+  display: none !important;
+  content: none !important;
+}
+
+.kiki-mywork-vibe-btn__text {
+  display: inline-block;
+  text-decoration: none !important;
+}
+
+.kiki-mywork-vibe-badge {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-family: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  color: #fff;
+  background: #5b5bf0;
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(91, 91, 240, 0.35);
+  pointer-events: none;
+}
+
+.kiki-mywork-vibe-btn:hover,
+.kiki-mywork-vibe-btn:focus-visible {
+  background: #5b5bf0;
+  color: #fff;
+  border-color: #5b5bf0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(91, 91, 240, 0.22);
+  outline: none;
+}
+
+.kiki-mywork-vibe-btn:hover .kiki-mywork-vibe-badge,
+.kiki-mywork-vibe-btn:focus-visible .kiki-mywork-vibe-badge {
+  border-color: #5b5bf0;
+}
+
+@media (max-width: 640px) {
+  #container .css-ch23jh:has(.kiki-mywork-vibe-btn) {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+}
 .kiki-hero-glow {
   position: fixed;
   pointer-events: none;

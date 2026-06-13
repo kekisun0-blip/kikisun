@@ -3406,6 +3406,7 @@
       if (a.classList.contains("kiki-hero-about-link") || a.classList.contains("kiki-hero-vibe-link")) {
         return;
       }
+      if (a.classList.contains("kiki-mywork-vibe-btn")) return;
       var txt = (a.innerText || "").trim();
       if (!txt || txt.length >= 30) return;
       if (/^(kiki\s*portfolio|portfolio|kiki\s*作品集|作品集)$/i.test(txt)) return;
@@ -3553,6 +3554,52 @@
     });
   }
 
+  function findMyWorkSectionHeader() {
+    if (!isHomePath()) return null;
+    var nodes = Array.from(document.querySelectorAll("#container p, #container span, #container div"));
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (!node || node.children.length > 0) continue;
+      var txt = (node.textContent || "").replace(/\s+/g, " ").trim();
+      if (txt !== "My work" && txt !== "我的作品") continue;
+      if (!isElementVisibleForLangSwitch(node)) continue;
+      return node;
+    }
+    return null;
+  }
+
+  function initMyWorkVibeCodingEntry() {
+    if (!isHomePath()) return;
+    var heading = findMyWorkSectionHeader();
+    if (!heading) return;
+
+    var titleWrap = heading.closest(".css-ch23jh") || heading.parentElement;
+    if (!titleWrap) return;
+
+    var existing = titleWrap.querySelector(".kiki-mywork-vibe-btn");
+    if (existing) {
+      if (existing.previousElementSibling === heading) return;
+      existing.remove();
+    }
+
+    var btn = document.createElement("a");
+    btn.href = VIBE_CODING_URL;
+    btn.className = "kiki-mywork-vibe-btn";
+    btn.setAttribute("aria-label", "Explore Vibe Coding projects");
+    btn.innerHTML =
+      '<span class="kiki-mywork-vibe-btn__text">Vibe Coding \u2192</span>' +
+      '<span class="kiki-mywork-vibe-badge">NEW</span>';
+
+    heading.insertAdjacentElement("afterend", btn);
+  }
+
+  function scheduleMyWorkVibeEntry() {
+    initMyWorkVibeCodingEntry();
+    [120, 900, 2400, 4000, 6500].forEach(function (delay) {
+      setTimeout(initMyWorkVibeCodingEntry, delay);
+    });
+  }
+
   function isHomeHeroCandidate(node) {
     if (!node || node.nodeType !== 1 || node.children.length > 0) return false;
     var txt = (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
@@ -3687,13 +3734,15 @@
   }
 
   function initHeroTypewriter() {
-    if (__heroTyped) return;
     var heroEl = getHomeHeroElement();
     if (!heroEl) return;
     if (heroEl.getAttribute("data-kiki-typed-run") === "1") {
       __heroTyped = true;
       return;
     }
+    if (heroEl.classList.contains("kiki-hero-typing")) return;
+    if (heroEl.getAttribute("data-kiki-typing-active") === "1") return;
+
     bindHeroSpotlight(heroEl);
 
     var shouldType = true;
@@ -3707,17 +3756,28 @@
       return;
     }
 
-    var fullText = (heroEl.innerText || heroEl.textContent || "").trim();
+    var fullText = (
+      heroEl.getAttribute("data-kiki-hero-orig-en") ||
+      heroEl.innerText ||
+      heroEl.textContent ||
+      ""
+    ).trim();
     if (!fullText) return;
-    try { sessionStorage.setItem(HERO_TYPED_KEY, "1"); } catch (e2) {}
-    heroEl.setAttribute("data-kiki-typed-run", "1");
-    __heroTyped = true;
+    if (!heroEl.getAttribute("data-kiki-hero-orig-en")) {
+      heroEl.setAttribute("data-kiki-hero-orig-en", fullText);
+    }
 
+    heroEl.setAttribute("data-kiki-typing-active", "1");
     var computedH = window.getComputedStyle(heroEl).height || "auto";
     heroEl.style.visibility = "hidden";
     heroEl.style.minHeight = computedH;
 
     setTimeout(function () {
+      if (!document.contains(heroEl) || !isElementVisibleForLangSwitch(heroEl)) {
+        heroEl.removeAttribute("data-kiki-typing-active");
+        return;
+      }
+
       heroEl.textContent = "";
       heroEl.style.visibility = "";
       heroEl.classList.add("kiki-hero-typing");
@@ -3725,18 +3785,33 @@
       var i = 0;
       var SPEED = 26;
       function type() {
+        if (!document.contains(heroEl)) {
+          heroEl.removeAttribute("data-kiki-typing-active");
+          return;
+        }
         if (i <= fullText.length) {
           heroEl.textContent = fullText.slice(0, i);
           i++;
           setTimeout(type, SPEED);
-        } else {
-          heroEl.classList.remove("kiki-hero-typing");
-          heroEl.style.minHeight = "";
-          scheduleHeroVibeLink();
+          return;
         }
+        heroEl.classList.remove("kiki-hero-typing");
+        heroEl.style.minHeight = "";
+        heroEl.removeAttribute("data-kiki-typing-active");
+        heroEl.setAttribute("data-kiki-typed-run", "1");
+        try { sessionStorage.setItem(HERO_TYPED_KEY, "1"); } catch (e2) {}
+        __heroTyped = true;
+        scheduleHeroVibeLink();
       }
       type();
     }, 400);
+  }
+
+  function scheduleHeroTypewriter() {
+    initHeroTypewriter();
+    [700, 1400, 2400, 4000, 6500].forEach(function (delay) {
+      setTimeout(initHeroTypewriter, delay);
+    });
   }
 
   /* ─── Page transition overlay (project SPA navigation) ─── */
@@ -4261,11 +4336,11 @@
     setTimeout(initHoverEffects, 1800);
     setTimeout(layoutProjectCardRows, 700);
     setTimeout(layoutProjectCardRows, 1900);
-    setTimeout(initHeroTypewriter, 700);
+    scheduleHeroTypewriter();
     setTimeout(initHeroSpotlight, 1000);
-    setTimeout(initHeroTypewriter, 2100);
     setTimeout(initHeroSpotlight, 2600);
     scheduleHeroVibeLink();
+    scheduleMyWorkVibeEntry();
     prefetchSiteIndexJson();
     bootProjectRouteFromUrl();
     setTimeout(fixAboutLinks, 500);
@@ -4296,6 +4371,8 @@
       try { scheduleSiteLangSwitchRecovery(); } catch (e) {}
       try { maybeReapplySiteZh(); } catch (e2) {}
       try { refreshHeroVibeEntry(); } catch (e4) {}
+      try { initMyWorkVibeCodingEntry(); } catch (e5) {}
+      try { initHeroTypewriter(); } catch (e6) {}
       if (!document.querySelector(".kiki-chat-trigger")) {
         try { initAskKiki(); } catch (e3) {}
       }

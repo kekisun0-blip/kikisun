@@ -10,8 +10,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ASSETS_DIR = path.join(__dirname, "site/_assets/v11");
-const MAX_DIMENSION = 1920; // site max content width
-const QUALITY = 78;
+const MAX_DIMENSION = 2560; // preserve 2x for ~1280px content column UI screenshots
+const QUALITY = 90;
 const FORCE = process.argv.includes("--force");
 
 function sizeMB(bytes) {
@@ -31,8 +31,11 @@ async function toWebp(srcPath) {
     });
   }
 
-  return pipeline.webp({ quality: QUALITY, effort: 4 }).toBuffer();
+  return pipeline.webp({ quality: QUALITY, effort: 4, smartSubsample: false }).toBuffer();
 }
+
+// Skip lossy WebP → WebP re-encode (causes generation loss on UI screenshots).
+const SKIP_WEBP_RECOMPRESS = true;
 
 const pngFiles = fs.readdirSync(ASSETS_DIR).filter((f) => f.endsWith(".png"));
 console.log(`Found ${pngFiles.length} PNG files in ${ASSETS_DIR}`);
@@ -75,7 +78,7 @@ for (const file of pngFiles) {
 }
 
 // Recompress orphan WebPs (no PNG source) that are still large
-for (const file of fs.readdirSync(ASSETS_DIR).filter((f) => f.endsWith(".webp"))) {
+if (!SKIP_WEBP_RECOMPRESS) for (const file of fs.readdirSync(ASSETS_DIR).filter((f) => f.endsWith(".webp"))) {
   const png = file.replace(".webp", ".png");
   if (fs.existsSync(path.join(ASSETS_DIR, png))) continue;
 

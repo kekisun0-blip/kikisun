@@ -24,7 +24,7 @@
   var KIKI_CV_DOWNLOAD_NAME = "CV-Keyue-SUN.pdf";
 
   var ZH_HERO_FULL =
-    "你好！我是 Kiki Sun（孙可月），一名专注于 AI 驱动体验设计与深度商业用户研究的高级 UX 设计师 & 商业分析师。";
+    "你好！我是 Kiki Sun（孙可月），一名专注于 AI 驱动体验设计与深度商业用户研究的高级 UX 设计师 & 设计工程师。";
 
   function normalizeMatchText(s) {
     return String(s || "")
@@ -133,7 +133,7 @@
       ["SOCIAL", "社交"],
       ["Redbook", "小红书"],
       ["LinkedIn", "领英"],
-      ["Business Analyst", "商业分析师"],
+      ["Design Engineer", "设计工程师"],
       ["Senior UX/UI Designer", "高级 UX/UI 设计师"],
       ["Call to action →", "查看项目 →"],
     ];
@@ -1103,37 +1103,37 @@
   /* ─────────────────────────────────────────────────────────────────── */
   /* ─── Project DB ─── */
   var PROJECT_DB = [
-    { match: /solplanet|aiswei|ems/i, title: "Solplanet Smart Energy APP — EMS & AI Mode", meta: "AISWEI 🇨🇳 · AI Business Analysis · 2025.8 – NOW", route: "/project",
+    { match: /solplanet|aiswei|ems/i, title: "Solplanet Smart Energy APP — EMS & AI Mode", meta: "AISWEI 🇨🇳 · AI Business Analysis · 2025.8 – NOW", route: "/project-9",
       overview: "智慧能源产品 EMS 与 AI Mode：负责业务分析、信息架构、交互范式定义及 Vibe Coding 原型验证。",
       overviewEn: "Smart-energy product (EMS & AI Mode): business analysis, IA, interaction patterns, and Vibe Coding prototypes.",
       process: ["业务分析", "用户旅程", "AI Mode IA", "原型迭代", "开发协作"],
       processEn: ["Discovery", "User journey", "AI Mode IA", "Prototype iteration", "Dev collaboration"] },
-    { match: /decathlon|supply/i, title: "Decathlon DPCP — Global Supply Chain", meta: "Decathlon 🇫🇷 · Digital Product Designer · 2022.12 – 2024.4", route: "/project-7",
+    { match: /decathlon|supply/i, title: "Decathlon DPCP — Global Supply Chain", meta: "Decathlon 🇫🇷 · Digital Product Designer · 2022.12 – 2024.4", route: "/project",
       overview: "全球供应链数字化平台：统一采购/物流视图与 AI 自动化场景。",
       overviewEn: "Global supply-chain platform: unified sourcing/logistics views and AI automation scenarios.",
       process: ["干系人访谈", "流程梳理", "Dashboard IA", "自动化设计", "多市场适配"],
       processEn: ["Stakeholder interviews", "Process mapping", "Dashboard IA", "Automation UX", "Multi-market rollout"] },
-    { match: /lkk|data bank|bi portal/i, title: "LKK Data Bank & BI Portal", meta: "Lee Kum Kee 🇭🇰 · UI/UX Designer & PO · 2024.5 – 2025.6", route: "/project-6",
+    { match: /lkk|data bank|bi portal/i, title: "LKK Data Bank & BI Portal", meta: "Lee Kum Kee 🇭🇰 · UI/UX Designer & PO · 2024.5 – 2025.6", route: "/project-2",
       overview: "企业数据银行与 BI 门户：多源整合与自助分析体验。",
       overviewEn: "Enterprise data bank & BI portal: multi-source integration and self-serve analytics.",
       process: ["数据梳理", "需求优先级", "报表体系", "权限模型", "上线迭代"],
       processEn: ["Data mapping", "Prioritization", "Reporting system", "Permissions", "Launch iterations"] },
-    { match: /bmw|odpm/i, title: "BMW ODPM", meta: "BMW · Digital Product Design", route: "/project-2",
+    { match: /bmw|odpm/i, title: "BMW ODPM", meta: "BMW · Digital Product Design", route: "/project-3",
       overview: "宝马 ODPM 数字化体验：复杂 B 端任务流与清晰导航。",
       overviewEn: "BMW ODPM digital experience: complex B2B task flows with clear navigation.",
       process: ["专家共创", "任务简化", "组件协作", "可用性走查"],
       processEn: ["Expert co-creation", "Task simplification", "Component collaboration", "Usability reviews"] },
-    { match: /senselink|sense link/i, title: "SenseLink JCV", meta: "JCV 🇯🇵 · UI/UX Design", route: "/project-3",
-      overview: "工业设备管理：监控、告警与运维任务一体化。",
-      overviewEn: "Industrial equipment management: monitoring, alerts, and ops tasks in one flow.",
-      process: ["现场调研", "告警模型", "多端适配"],
-      processEn: ["Field research", "Alert model", "Multi-device adaptation"] },
-    { match: /weavr|game data/i, title: "Weavr live", meta: "Weavr 🇬🇧 · UI/UX Researcher", route: "/project-6",
+    { match: /senselink|sense link|machine management/i, title: "SenseLink JCV — Machine Management", meta: "JCV 🇯🇵 · UI/UX Design Intern", route: "/project-4",
+      overview: "工业测温设备管理平台：监控、告警与运维任务一体化 POC 与界面设计。",
+      overviewEn: "Temperature-measurement machine management platform: monitoring, alerts, ops tasks, and UI/UX POC.",
+      process: ["现场调研", "告警模型", "多端适配", "POC 走查"],
+      processEn: ["Field research", "Alert model", "Multi-device adaptation", "POC walkthrough"] },
+    { match: /weavr|game data/i, title: "Weavr live", meta: "Weavr 🇬🇧 · UI/UX Researcher", route: "/project-5",
       overview: "游戏直播数据可视化与用户研究。",
       overviewEn: "Live game-streaming data visualization grounded in user research.",
       process: ["研究", "叙事", "原型测试"],
       processEn: ["Research", "Narrative design", "Prototype testing"] },
-    { match: /sensethunder|physical/i, title: "SenseThunder JCV", meta: "JCV · UI/UX Intern", route: "/project-8",
+    { match: /sensethunder|physical product/i, title: "SenseThunder JCV", meta: "JCV · UI/UX Intern", route: "/project-7",
       overview: "实体产品配套软件与可用性测试。",
       overviewEn: "Companion software for hardware products plus usability testing.",
       process: ["联调", "测试", "迭代"],
@@ -1143,7 +1143,7 @@
       overviewEn: "AR smart glasses UI/UX design, won the Judges' Choice Award.",
       process: ["研究", "交互设计", "评审"],
       processEn: ["Research", "Interaction design", "Jury review"] },
-    { match: /york|quantitative|banking/i, title: "Mobile Banking Research", meta: "University of York · User Research", route: "/project-9",
+    { match: /york|quantitative|banking|mobile banking research/i, title: "Mobile Banking Research", meta: "University of York · User Research", route: "/project-8",
       overview: "移动端银行体验定量研究与设计建议。",
       overviewEn: "Quantitative mobile banking research with design recommendations.",
       process: ["假设", "问卷", "分析", "建议"],
@@ -1795,6 +1795,15 @@
   }
 
   var TOC_MAX_ITEMS = 8;
+  var PROJECT_PATH_KIND = {
+    "/project": "decathlon",
+    "/project-2": "lkk",
+    "/project-4": "senselink",
+    "/project-6": "huwei",
+    "/project-7": "sensethunder",
+    "/project-8": "mobilebanking",
+    "/project-9": "solplanet"
+  };
   var TOC_EN_METHOD_KEYWORDS = [
     "market", "user", "competitor", "insight", "strategy", "direction",
     "design", "validation", "iteration", "solution", "research", "analysis"
@@ -1804,6 +1813,7 @@
     "设计", "验证", "迭代", "方案", "研究", "分析"
   ];
   var TOC_EXACT_SKIP = /^(Go Back|kiki Portfolio|About|Resume|BASE|CONTACT|SOCIAL|LinkedIn|Redbook|See Project|Call to action|See more|EN|中文|ToC|ToB|My work|For APP|For Installers|For Owners|For installers|For owners|APP Iteration Background|Competitive trends|Market Insights)$/i;
+  var TOC_CONNECT_NOISE = /connect with me to talk more about your project/i;
   var TOC_ROLE_NOISE = /\b(designer|researcher|manager|director|engineer|intern|founder|consultant|lead|specialist|analyst|po|pm|owner|stakeholder|student)\b|设计师|研究员|经理|总监|工程师|实习|顾问|负责人|产品经理|项目经理|岗位|角色/i;
   var TOC_TOOL_NOISE = /\b(figma|sketch|photoshop|illustrator|excel|spss|jira|notion|miro|axure|framer|chatgpt|cursor|codex)\b|工具|软件/i;
   var TOC_CITATION_NOISE = /\b(source|reference|citation|quote|quoted|by)\b|et\s+al\.?|引用|参考|出处|来源/i;
@@ -1850,6 +1860,9 @@
   function isLikelyPersonName(txt) {
     var normalized = normalizeTocText(txt);
     if (!normalized) return false;
+    if (/\b(research|analysis|design|persona|prototype|portal|management|visualization|strategy|overview|interviews|questionnaires|sandbox|dashboard|module|process|insights|validation|iteration)\b/i.test(normalized)) {
+      return false;
+    }
     if (TOC_COMMON_NAME_PREFIX.test(normalized)) return true;
     if (/^(Alain|Thomas|Malte Gerke|Mariusz Jackiewicz)$/i.test(normalized)) return true;
     if (/^[A-Z][a-z]{1,20}(?:\s+[A-Z][a-z]{1,20}){0,2}$/.test(normalized)) return true;
@@ -1860,6 +1873,7 @@
     var normalized = normalizeTocText(txt);
     if (!normalized) return true;
     if (TOC_EXACT_SKIP.test(normalized)) return true;
+    if (TOC_CONNECT_NOISE.test(normalized)) return true;
     if (/^\d+$/.test(normalized)) return true;
     if (normalized.length < 4) return true;
     if (isLikelyPersonName(normalized)) return true;
@@ -2062,6 +2076,174 @@
       terms: ["project content -portal", "portal", "content -portal", "门户"]
     }
   ];
+  var LKK_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "Overview",
+      labelZh: "概述",
+      terms: ["lkk data bank"],
+      imageIndex: 0,
+      minTop: 700
+    },
+    {
+      labelEn: "AI Era UEDC",
+      labelZh: "AI 时代 UEDC",
+      terms: ["ai era uedc", "ai era", "uedc"],
+      imageIndex: 1
+    },
+    {
+      labelEn: "BI Portal & Data Bank",
+      labelZh: "BI Portal & Data Bank",
+      terms: ["bi portal & data bank", "bi portal and data bank"]
+    },
+    {
+      labelEn: "BI Portal - Data Visualization",
+      labelZh: "BI Portal - 数据可视化",
+      terms: [
+        "bi portal - data visualization",
+        "data visualization for digital innovation"
+      ]
+    },
+    {
+      labelEn: "UEMS",
+      labelZh: "UEMS",
+      terms: ["uems"],
+      imageIndex: 10
+    }
+  ];
+
+  // OCR-derived keywords keyed by image src hash prefix (project-4 SenseLink slides).
+  var SENSELINK_IMAGE_KEYWORD_REGISTRY = {
+    ccf3579: ["sensemercury", "sensemercury cloud", "cloud dashboard", "jcv sensemercury"],
+    "8303266": ["basic information", "senselink design optimization", "background overview"],
+    "72ab4dbe": ["design walkthrough", "senselink list page", "form page", "monitoring page"],
+    "7784ab5d": ["design walkthrough", "typical page design", "components"],
+    c3b7ec70: ["key process", "core functions", "device management"],
+    d7028a3f: ["typical page", "list page", "classification dimensions"],
+    fc463984: ["typical page", "form page", "form classification dimensions"],
+    be77ada1: ["typical page", "detail page", "design analysis"],
+    c9049a92: ["senselink components", "component strategy", "compatibility"],
+    "69113bde": ["component structure", "visual design exploration", "visual design", "management layout"],
+    f0cddefc: ["management page layout", "visual design"]
+  };
+
+  var SENSELINK_CUSTOM_TOC_ITEMS = [
+    {
+      labelEn: "JCV SenseMercury",
+      labelZh: "JCV SenseMercury",
+      imageKeywords: ["sensemercury cloud", "sensemercury", "jcv sensemercury"],
+      imageHashPrefixes: ["ccf3579"],
+      terms: ["jcv sensemercury"],
+      minTop: 780
+    },
+    {
+      labelEn: "Design walkthrough",
+      labelZh: "设计走查",
+      imageKeywords: ["design walkthrough"],
+      imageHashPrefixes: ["72ab4dbe"]
+    },
+    {
+      labelEn: "Key process",
+      labelZh: "关键流程",
+      imageKeywords: ["key process"],
+      imageHashPrefixes: ["c3b7ec70"]
+    },
+    {
+      labelEn: "List page",
+      labelZh: "列表页",
+      imageKeywords: ["list page", "typical page - list page"],
+      imageHashPrefixes: ["d7028a3f"]
+    },
+    {
+      labelEn: "Form page",
+      labelZh: "表单页",
+      imageKeywords: ["form page", "typical page - form page"],
+      imageHashPrefixes: ["fc463984"]
+    },
+    {
+      labelEn: "Detail page",
+      labelZh: "详情页",
+      imageKeywords: ["detail page", "typical page - detail page"],
+      imageHashPrefixes: ["be77ada1"]
+    },
+    {
+      labelEn: "Components",
+      labelZh: "组件",
+      imageKeywords: ["senselink components", "component strategy"],
+      imageHashPrefixes: ["c9049a92"]
+    },
+    {
+      labelEn: "Visual Design",
+      labelZh: "视觉设计",
+      imageKeywords: ["visual design exploration", "visual design"],
+      imageHashPrefixes: ["69113bde"]
+    }
+  ];
+
+  var PROJECT6_DESIGN_POC_TOC_ITEMS = [
+    {
+      labelEn: "Design background",
+      labelZh: "设计背景",
+      terms: ["huwei & nus ar smart glass", "ar smart glass", "hololens", "puppyland"],
+      imageIndex: 1,
+      imageFirst: true,
+      minTop: 750
+    },
+    {
+      labelEn: "Brainstorm",
+      labelZh: "头脑风暴",
+      imageIndex: 2,
+      imageFirst: true
+    },
+    {
+      labelEn: "Interview",
+      labelZh: "访谈",
+      imageIndex: 3,
+      imageFirst: true
+    },
+    {
+      labelEn: "Persona",
+      labelZh: "用户画像",
+      imageIndex: 4,
+      imageFirst: true
+    },
+    {
+      labelEn: "Journey map",
+      labelZh: "用户旅程",
+      imageIndex: 5,
+      imageFirst: true
+    },
+    {
+      labelEn: "Storyboard",
+      labelZh: "故事板",
+      imageIndex: 6,
+      imageFirst: true
+    },
+    {
+      labelEn: "Video for Storyboard",
+      labelZh: "故事板视频",
+      imageIndex: 7,
+      imageFirst: true
+    },
+    {
+      labelEn: "Final design",
+      labelZh: "最终设计",
+      imageIndex: 9,
+      imageFirst: true
+    },
+    {
+      labelEn: "Implementation",
+      labelZh: "落地实现",
+      imageIndex: 12,
+      imageFirst: true
+    }
+  ];
+
+  var PROJECT_CUSTOM_TOC_BY_PATH = {
+    "/project-2": LKK_CUSTOM_TOC_ITEMS,
+    "/project-4": SENSELINK_CUSTOM_TOC_ITEMS,
+    "/project-6": PROJECT6_DESIGN_POC_TOC_ITEMS
+  };
+
   var CUSTOM_METHOD_TOC_ITEMS = [
     {
       labelZh: "市场分析",
@@ -2171,9 +2353,13 @@
 
   function resolveProjectTocKind() {
     if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return "";
+    var path = normalizeNavPath(location.pathname || "");
+    if (Object.prototype.hasOwnProperty.call(PROJECT_PATH_KIND, path)) {
+      return PROJECT_PATH_KIND[path] || "";
+    }
+
     var snapshot = getProjectPageScopedSnapshot();
     var primary = getProjectPrimaryTitle();
-    var path = normalizeNavPath(location.pathname || "");
 
     for (var sl = 0; sl < SENSELINK_PAGE_MARKERS.length; sl++) {
       if (snapshot.indexOf(SENSELINK_PAGE_MARKERS[sl]) >= 0) return "senselink";
@@ -2185,7 +2371,6 @@
       }
     }
 
-    if (path === "/project-8") return "mobilebanking";
     if (/mobile banking|university of york|lloyds bank/i.test(primary)) return "mobilebanking";
     for (var mb = 0; mb < MOBILE_BANKING_PAGE_MARKERS.length; mb++) {
       if (snapshot.indexOf(MOBILE_BANKING_PAGE_MARKERS[mb]) >= 0) return "mobilebanking";
@@ -2214,12 +2399,6 @@
     }
 
     if (/decathlon|global\s*supply\s*chain/i.test(primary) && !/huwei|huawei|puppyland/i.test(primary)) {
-      return "decathlon";
-    }
-    if (
-      snapshot.indexOf("decathlon dpcp") >= 0 ||
-      snapshot.indexOf("global supply chain") >= 0
-    ) {
       return "decathlon";
     }
     return "";
@@ -2769,7 +2948,189 @@
     }).filter(Boolean);
   }
 
+  function getProjectCustomTocItemsForPath() {
+    if (!/^\/project(-\d+)?$/.test(location.pathname || "")) return null;
+    var path = normalizeNavPath(location.pathname || "");
+    return PROJECT_CUSTOM_TOC_BY_PATH[path] || null;
+  }
+
+  function collectProjectContentImages(scope) {
+    scope = scope || findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var footerY = findProjectFooterCutoffY(scope);
+    var rows = [];
+    Array.from(scope.querySelectorAll("img")).forEach(function (img) {
+      if (!img || !img.getBoundingClientRect) return;
+      var w = img.naturalWidth || img.width || 0;
+      var h = img.naturalHeight || img.height || 0;
+      if (w < 350 || h < 200) return;
+      var src = String(img.currentSrc || img.src || "");
+      if (/logo|avatar|kiki-avatar|kk-portfolio-logo/i.test(src)) return;
+      var top = img.getBoundingClientRect().top + window.scrollY;
+      if (top < 250 || top > footerY - 50) return;
+      rows.push({ el: img, top: Math.round(top), w: w, h: h });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    var uniq = [];
+    var lastTop = -9999;
+    rows.forEach(function (row) {
+      if (row.top - lastTop < 40) return;
+      lastTop = row.top;
+      uniq.push(row);
+    });
+    return uniq;
+  }
+
+  function findCustomTocAnchorByTerms(scope, terms, options) {
+    options = options || {};
+    if (!scope || !terms || !terms.length) return null;
+    var minTop = typeof options.minTop === "number" ? options.minTop : 350;
+    var maxTop =
+      typeof options.maxTop === "number" ? options.maxTop : findProjectFooterCutoffY(scope);
+    var nodes = Array.from(scope.querySelectorAll("p, h1, h2, h3, h4, span, div"));
+    var best = null;
+    for (var i = 0; i < nodes.length; i++) {
+      var txt = (nodes[i].innerText || "").trim();
+      if (!txt || txt.length > 120) continue;
+      if (PROJECT_FOOTER_CUTOFF_RE.test(normalizeTocText(txt))) continue;
+      if (TOC_CONNECT_NOISE.test(txt)) continue;
+      if (matchCustomSectionScore(txt, terms) <= 0) continue;
+      var anchor = pickDesignWalkthroughAnchor(nodes[i], txt);
+      if (!anchor) continue;
+      var style = window.getComputedStyle(anchor);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      var top = anchor.getBoundingClientRect().top + window.scrollY;
+      if (top < minTop || top > maxTop) continue;
+      var row = {
+        el: anchor,
+        text: (txt.split(/\n+/)[0] || "").trim(),
+        fs: Math.round(parseFloat(style.fontSize) || 16),
+        top: Math.round(top)
+      };
+      if (!best || row.top < best.top) best = row;
+    }
+    return best;
+  }
+
+  function findCustomTocAnchorByImageIndex(scope, imageIndex) {
+    var images = collectProjectContentImages(scope);
+    if (!images.length) return null;
+    var idx = typeof imageIndex === "number" ? imageIndex : 0;
+    if (idx < 0) idx = 0;
+    if (idx >= images.length) idx = images.length - 1;
+    var row = images[idx];
+    return { el: row.el, text: "", fs: 24, top: row.top };
+  }
+
+  function getImageSrcHash(img) {
+    var src = String(img.currentSrc || img.src || "");
+    var name = src.split("/").pop() || "";
+    return name.replace(/\.(webp|png|jpg|jpeg).*$/i, "").toLowerCase();
+  }
+
+  function getRegistryKeywordsForHash(hash, registry) {
+    registry = registry || {};
+    var h = (hash || "").toLowerCase();
+    for (var prefix in registry) {
+      if (!Object.prototype.hasOwnProperty.call(registry, prefix)) continue;
+      if (h.indexOf(String(prefix).toLowerCase()) === 0) return registry[prefix];
+    }
+    return [];
+  }
+
+  function scoreImageKeywordMatch(hash, keywords, registry, hashPrefixes) {
+    var h = (hash || "").toLowerCase();
+    var score = 0;
+    if (hashPrefixes && hashPrefixes.length) {
+      for (var pi = 0; pi < hashPrefixes.length; pi++) {
+        var pref = String(hashPrefixes[pi] || "").toLowerCase();
+        if (pref && h.indexOf(pref) === 0) score += 20;
+      }
+    }
+    var regKeywords = getRegistryKeywordsForHash(h, registry);
+    if (!keywords || !keywords.length) return score;
+    var corpus = regKeywords.join(" ").toLowerCase();
+    for (var i = 0; i < keywords.length; i++) {
+      var kw = normalizeTocText(keywords[i]).toLowerCase();
+      if (!kw) continue;
+      if (corpus.indexOf(kw) >= 0) score += kw.length >= 16 ? 5 : kw.length >= 8 ? 3 : 2;
+    }
+    return score;
+  }
+
+  function findCustomTocAnchorByImageKeywords(scope, item, usedEls) {
+    if (!scope || !item) return null;
+    usedEls = usedEls || new Set();
+    var keywords = item.imageKeywords || [];
+    var hashPrefixes = item.imageHashPrefixes || [];
+    if (!keywords.length && !hashPrefixes.length) return null;
+    var registry = item.imageRegistry || SENSELINK_IMAGE_KEYWORD_REGISTRY;
+    var minTop = typeof item.minTop === "number" ? item.minTop : 350;
+    var images = collectProjectContentImages(scope);
+    var best = null;
+    var bestScore = 0;
+    for (var i = 0; i < images.length; i++) {
+      var row = images[i];
+      if (usedEls.has(row.el)) continue;
+      if (row.top < minTop) continue;
+      var hash = getImageSrcHash(row.el);
+      var score = scoreImageKeywordMatch(hash, keywords, registry, hashPrefixes);
+      if (score <= 0) continue;
+      if (!best || score > bestScore || (score === bestScore && row.top < best.top)) {
+        best = row;
+        bestScore = score;
+      }
+    }
+    if (!best) return null;
+    usedEls.add(best.el);
+    return { el: best.el, text: "", fs: 24, top: best.top };
+  }
+
+  function resolveProjectPathCustomAnchors(tocItems) {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope || !tocItems || !tocItems.length) return [];
+    var results = [];
+    var usedEls = new Set();
+    for (var i = 0; i < tocItems.length; i++) {
+      var item = tocItems[i];
+      var target = null;
+      var hasImageKeywords =
+        (item.imageKeywords && item.imageKeywords.length) ||
+        (item.imageHashPrefixes && item.imageHashPrefixes.length);
+      if (hasImageKeywords) {
+        target = findCustomTocAnchorByImageKeywords(scope, item, usedEls);
+      }
+      if (!target && item.imageFirst && typeof item.imageIndex === "number") {
+        target = findCustomTocAnchorByImageIndex(scope, item.imageIndex);
+      }
+      if (!target && item.terms && item.terms.length) {
+        target = findCustomTocAnchorByTerms(scope, item.terms, {
+          minTop: typeof item.minTop === "number" ? item.minTop : 350
+        });
+      }
+      if (!target && !item.imageFirst && typeof item.imageIndex === "number") {
+        target = findCustomTocAnchorByImageIndex(scope, item.imageIndex);
+      }
+      if (!target && results.length) target = results[results.length - 1];
+      if (!target) continue;
+      var label = getCustomTocLabel(item);
+      var el = target.el;
+      if (!el.id || !/^kiki-(?:s|cm|pt)-/.test(el.id)) el.id = "kiki-cm-pt-" + i;
+      results.push({ el: el, text: label, fs: target.fs || 24, top: target.top });
+    }
+    return results;
+  }
+
+  function findProjectPathCustomAnchors() {
+    var items = getProjectCustomTocItemsForPath();
+    if (!items) return [];
+    return resolveProjectPathCustomAnchors(items);
+  }
+
   function findCustomMethodologyAnchors() {
+    var pathCustom = findProjectPathCustomAnchors();
+    if (pathCustom.length) return pathCustom;
+
     var isSenseLink = isSenseLinkJCVPage();
     var isSenseThunder = !isSenseLink && isSenseThunderJCVPage();
     var isMobileBanking = !isSenseLink && !isSenseThunder && isMobileBankingProjectPage();
@@ -2780,20 +3141,6 @@
       !isSenseLink && !isSenseThunder && !isMobileBanking && !isHuwei && !isDecathlon && isSolplanetProjectPage();
     if (!isSenseLink && !isSenseThunder && !isMobileBanking && !isHuwei && !isSolplanet && !isDecathlon) {
       return [];
-    }
-
-    if (isSenseLink) {
-      var walkthroughHeadings = findSenseLinkDesignWalkthroughHeadings();
-      if (!walkthroughHeadings.length) return [];
-      return walkthroughHeadings.map(function (item, idx) {
-        if (!item.el.id || !/^kiki-(?:s|cm)-/.test(item.el.id)) item.el.id = "kiki-cm-" + idx;
-        return {
-          el: item.el,
-          text: getCustomTocLabel(item),
-          fs: item.fs,
-          top: item.top
-        };
-      });
     }
 
     if (isSenseThunder) return findSenseThunderAnchors();
@@ -2948,6 +3295,35 @@
     return picked;
   }
 
+  function findGenericSectionHeadings() {
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return [];
+    var footerY = findProjectFooterCutoffY(scope);
+    var rows = [];
+    var seen = new Set();
+    Array.from(scope.querySelectorAll("p, h1, h2, h3, h4")).forEach(function (el) {
+      if (el.children.length > 0) return;
+      var txt = (el.innerText || "").trim();
+      if (!txt || txt.length > 90 || txt.length < 3) return;
+      if (/^[\u200b\s]+$/.test(txt)) return;
+      if (PROJECT_FOOTER_CUTOFF_RE.test(normalizeTocText(txt))) return;
+      if (isTocNoiseTitle(txt)) return;
+      var style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") return;
+      var fs = parseFloat(style.fontSize);
+      if (fs < 36 || fs > 100) return;
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      if (top < 500 || top > footerY) return;
+      var key = normalizeTocText(txt).toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      rows.push({ el: el, text: txt, fs: Math.round(fs), top: Math.round(top) });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    if (rows.length > TOC_MAX_ITEMS) rows = rows.slice(0, TOC_MAX_ITEMS);
+    return rows;
+  }
+
   function buildProjectToc() {
     try {
       removeHuweiDecathlonStrayHeadings();
@@ -2962,14 +3338,8 @@
     var headings = findCustomMethodologyAnchors();
     if (!headings.length && isSenseThunderJCVPage()) headings = findSenseThunderAnchors();
     if (!headings.length && isMobileBankingProjectPage()) headings = findMobileBankingAnchors();
-    if (
-      !headings.length &&
-      !isSenseLinkJCVPage() &&
-      !isMobileBankingProjectPage() &&
-      (isHuweiARProjectPage() || !isDecathlonProjectPage())
-    ) {
-      headings = findProjectHeadings();
-    }
+    if (!headings.length) headings = findProjectHeadings();
+    if (!headings.length) headings = findGenericSectionHeadings();
     if (headings.length < 1) {
       if (toc) toc.remove();
       syncTocBodyClass();
@@ -3050,7 +3420,17 @@
 
   function initProjectToc() {
     ensureTocLangObserver();
-    var path = location.pathname;
+    var path = normalizeNavPath(location.pathname || "");
+    var isProjectPath = /^\/project(-\d+)?$/.test(path);
+    if (!isProjectPath) {
+      if (__tocMo) { __tocMo.disconnect(); __tocMo = null; }
+      if (__tocIo) { __tocIo.disconnect(); __tocIo = null; }
+      var staleToc = document.getElementById("kiki-toc");
+      if (staleToc) staleToc.remove();
+      syncTocBodyClass();
+      __tocLastPath = path;
+      return;
+    }
     if (path === __tocLastPath) return;
     __tocLastPath = path;
 
@@ -3061,14 +3441,12 @@
     if (old) old.remove();
     syncTocBodyClass();
 
-    // Only set up for paths that COULD be project detail pages
-    if (!/^\/project(-\d+)?$/.test(path)) return;
-
     // Build attempts (Go Back might appear after dynamic render)
     clearTimeout(__tocBuildTimer);
     __tocBuildTimer = setTimeout(buildProjectToc, 900);
     setTimeout(buildProjectToc, 2000);
     setTimeout(buildProjectToc, 4000);
+    setTimeout(buildProjectToc, 8000);
     setTimeout(removeHuweiDecathlonStrayHeadings, 500);
     setTimeout(removeHuweiDecathlonStrayHeadings, 1500);
     setTimeout(removeHuweiDecathlonStrayHeadings, 3000);
@@ -3861,8 +4239,23 @@
     __projectRouteBooted = true;
     prefetchSiteIndexJson();
     prefetchProjectJson(path);
+    eagerLoadProjectDetailImages();
     [0, 250, 700, 1500, 3000, 6000, 12000, 24000].forEach(function (ms) {
       setTimeout(nudgeSpaRoute, ms);
+      if (ms === 700 || ms === 3000) setTimeout(eagerLoadProjectDetailImages, ms + 80);
+    });
+  }
+
+  function eagerLoadProjectDetailImages() {
+    if (!isProjectDetailPage()) return;
+    var scope = findProjectContainer() || document.querySelector("#container");
+    if (!scope) return;
+    Array.from(scope.querySelectorAll("img")).forEach(function (img) {
+      if (!img) return;
+      img.loading = "eager";
+      img.removeAttribute("loading");
+      var deferred = img.getAttribute("data-src") || img.getAttribute("data-lazy-src");
+      if (deferred && !img.getAttribute("src")) img.setAttribute("src", deferred);
     });
   }
 

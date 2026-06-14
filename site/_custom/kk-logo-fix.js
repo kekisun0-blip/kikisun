@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  var KK_LOGO = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var FOOTER_LOGO_SRC = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var HERO_LEFT_SRC = "/_custom/logos/kk-portfolio-logo-left.svg?v=kk2";
+  var HERO_RIGHT_SRC = "/_custom/logos/kk-portfolio-logo-right.svg?v=kk2";
   var LEGACY_MARKERS = [
     "607b2d562261e395e26c1c2761fb81d7ea436dde",
     "ba99bb76c42f48d5764d167f926c3d614019efb7",
@@ -16,75 +18,62 @@
     if (!img || img.tagName !== "IMG") return false;
     var src = String(img.getAttribute("src") || img.src || "");
     if (img.getAttribute("data-kk-hero-logo") === "left") return true;
+    if (img.getAttribute("data-kk-hero-logo") === "right") return true;
     if (img.getAttribute("data-kk-footer-logo") === "1") return true;
     if (src.indexOf("kk-portfolio-logo") >= 0) return true;
     if (LEGACY_MARKERS.some(function (m) { return src.indexOf(m) >= 0; })) return true;
     return !!(img.closest(HERO_LEFT) || img.closest(HERO_RIGHT) || img.closest(FOOTER));
   }
 
-  function hideHeroRightSlots(root) {
-    (root || document).querySelectorAll(HERO_RIGHT).forEach(function (slot) {
-      slot.style.setProperty("display", "none", "important");
-      slot.setAttribute("data-kk-hero-hidden", "1");
-    });
-  }
-
-  function playHeroEntrance(slot) {
+  function playHeroEntrance(slot, side) {
     if (!slot || slot.getAttribute("data-kk-hero-animated")) return;
-    slot.setAttribute("data-kk-hero-animated", "left");
+    slot.setAttribute("data-kk-hero-animated", side);
     slot.style.removeProperty("opacity");
     slot.style.removeProperty("transform");
     slot.style.removeProperty("transition");
   }
 
-  function patchHeroImg(img) {
-    hideHeroRightSlots(document);
-    if (img.closest(HERO_RIGHT)) return;
-
+  function patchHeroImg(img, side) {
+    var targetSrc = side === "left" ? HERO_LEFT_SRC : HERO_RIGHT_SRC;
     var src = String(img.getAttribute("src") || "");
-    if (src.indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
-      img.setAttribute("src", KK_LOGO);
-    }
-    img.setAttribute("data-kk-hero-logo", "left");
+    if (src.indexOf(targetSrc) < 0) img.setAttribute("src", targetSrc);
+
+    img.setAttribute("data-kk-hero-logo", side);
     img.removeAttribute("loading");
     img.setAttribute("alt", "");
 
-    var row = img.closest(".css-mtcgbd");
-    if (row) row.setAttribute("data-kk-hero-row", "1");
-
-    var slot = img.closest(HERO_LEFT);
-    if (slot) playHeroEntrance(slot);
+    var slot = img.closest(side === "left" ? HERO_LEFT : HERO_RIGHT);
+    if (slot) playHeroEntrance(slot, side);
   }
 
   function patchFooterImg(img) {
     if (img.getAttribute("data-kk-footer-logo") === "1") {
       if (String(img.getAttribute("src") || "").indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
-        img.setAttribute("src", KK_LOGO);
+        img.setAttribute("src", FOOTER_LOGO_SRC);
       }
       return;
     }
 
     img.setAttribute("data-kk-footer-logo", "1");
     img.removeAttribute("loading");
-    img.setAttribute("src", KK_LOGO);
+    img.setAttribute("src", FOOTER_LOGO_SRC);
     img.setAttribute("alt", "");
   }
 
   function patchImg(img) {
     if (!isKkLogoImg(img)) return;
     if (img.closest(HERO_LEFT)) {
-      patchHeroImg(img);
+      patchHeroImg(img, "left");
       return;
     }
     if (img.closest(HERO_RIGHT)) {
-      hideHeroRightSlots(document);
+      patchHeroImg(img, "right");
       return;
     }
     patchFooterImg(img);
   }
 
   function scan(root) {
-    hideHeroRightSlots(root);
     (root || document).querySelectorAll("img").forEach(patchImg);
   }
 

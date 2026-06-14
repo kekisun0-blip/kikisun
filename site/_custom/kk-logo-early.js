@@ -1,64 +1,88 @@
 (function () {
   "use strict";
 
-  var KK_LOGO = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var FOOTER_LOGO = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
+  var HERO_LEFT = "/_custom/logos/kk-portfolio-logo-left.svg?v=kk2";
+  var HERO_RIGHT = "/_custom/logos/kk-portfolio-logo-right.svg?v=kk2";
   var LEGACY_MARKERS = [
     "607b2d562261e395e26c1c2761fb81d7ea436dde",
     "ba99bb76c42f48d5764d167f926c3d614019efb7",
     "2ae885f81a06711c6c769e9480a797a1ab960db5",
     "d4acfed6532b37a66ed5652f23dbddf9a3a61d25",
   ];
-  var HERO_LEFT = ".css-c271ib";
-  var HERO_RIGHT = ".css-1hsi05";
-  var FOOTER = ".css-3vz25c";
+  var SEL_LEFT = ".css-c271ib";
+  var SEL_RIGHT = ".css-1hsi05";
+  var SEL_FOOTER = ".css-3vz25c";
 
   function isLegacyLogoImg(img) {
     if (!img || img.tagName !== "IMG") return false;
-    if (img.getAttribute("data-kk-hero-logo") === "left") return true;
+    if (img.getAttribute("data-kk-hero-logo")) return true;
     if (img.getAttribute("data-kk-footer-logo") === "1") return true;
     var src = String(img.getAttribute("src") || img.src || "");
     if (src.indexOf("kk-portfolio-logo") >= 0) return true;
     if (LEGACY_MARKERS.some(function (m) { return src.indexOf(m) >= 0; })) return true;
-    return !!(img.closest(HERO_LEFT) || img.closest(HERO_RIGHT) || img.closest(FOOTER));
+    return !!(img.closest(SEL_LEFT) || img.closest(SEL_RIGHT) || img.closest(SEL_FOOTER));
   }
 
-  function hideHeroRightSlots(root) {
-    (root || document).querySelectorAll(HERO_RIGHT).forEach(function (slot) {
-      slot.style.setProperty("display", "none", "important");
-      slot.setAttribute("data-kk-hero-hidden", "1");
-    });
+  function isAlreadyPatched(img) {
+    if (img.closest(SEL_LEFT)) {
+      return (
+        img.getAttribute("data-kk-hero-logo") === "left" &&
+        String(img.getAttribute("src") || "").indexOf("kk-portfolio-logo-left") >= 0
+      );
+    }
+    if (img.closest(SEL_RIGHT)) {
+      return (
+        img.getAttribute("data-kk-hero-logo") === "right" &&
+        String(img.getAttribute("src") || "").indexOf("kk-portfolio-logo-right") >= 0
+      );
+    }
+    if (img.closest(SEL_FOOTER)) {
+      return (
+        img.getAttribute("data-kk-footer-logo") === "1" &&
+        String(img.getAttribute("src") || "").indexOf("kk-portfolio-logo.svg") >= 0
+      );
+    }
+    return false;
   }
 
   function patchImg(img) {
-    if (!isLegacyLogoImg(img)) return;
+    if (!isLegacyLogoImg(img) || isAlreadyPatched(img)) return;
 
-    if (img.closest(HERO_RIGHT)) {
-      hideHeroRightSlots(img.ownerDocument || document);
-      return;
-    }
-
-    var inHero = !!img.closest(HERO_LEFT);
-    var inFooter = !!img.closest(FOOTER);
-    if (!inHero && !inFooter) return;
-
-    var src = String(img.getAttribute("src") || "");
-    if (src.indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
-      img.setAttribute("src", KK_LOGO);
-    }
     img.removeAttribute("loading");
     img.setAttribute("alt", "");
 
-    if (inHero) {
+    if (img.closest(SEL_LEFT)) {
+      if (String(img.getAttribute("src") || "").indexOf(HERO_LEFT) < 0) {
+        img.setAttribute("src", HERO_LEFT);
+      }
       img.setAttribute("data-kk-hero-logo", "left");
-      var row = img.closest(".css-mtcgbd");
-      if (row) row.setAttribute("data-kk-hero-row", "1");
+      return;
     }
-    if (inFooter) img.setAttribute("data-kk-footer-logo", "1");
+    if (img.closest(SEL_RIGHT)) {
+      if (String(img.getAttribute("src") || "").indexOf(HERO_RIGHT) < 0) {
+        img.setAttribute("src", HERO_RIGHT);
+      }
+      img.setAttribute("data-kk-hero-logo", "right");
+      return;
+    }
+    if (img.closest(SEL_FOOTER)) {
+      if (String(img.getAttribute("src") || "").indexOf(FOOTER_LOGO) < 0) {
+        img.setAttribute("src", FOOTER_LOGO);
+      }
+      img.setAttribute("data-kk-footer-logo", "1");
+    }
   }
 
+  var scanning = false;
   function scan(root) {
-    hideHeroRightSlots(root);
-    (root || document).querySelectorAll("img").forEach(patchImg);
+    if (scanning) return;
+    scanning = true;
+    try {
+      (root || document).querySelectorAll("img").forEach(patchImg);
+    } finally {
+      scanning = false;
+    }
   }
 
   scan(document);

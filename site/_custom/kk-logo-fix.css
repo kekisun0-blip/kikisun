@@ -1,25 +1,40 @@
-/* Hero KK logos: stable left/right marks, hidden until patched */
+/* Hide legacy Figma logo assets until KK logo is patched */
+#container .css-c271ib img:not([data-kk-hero-logo="left"]),
+#container .css-3vz25c img:not([data-kk-footer-logo="1"]) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+#container .css-1hsi05,
+#container .css-1hsi05 img {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @keyframes kk-hero-logo-in-left {
   from { opacity: 0; transform: translateX(-50px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes kk-hero-logo-in-right {
-  from { opacity: 0; transform: translateX(50px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-#container .css-c271ib:not([data-kk-hero-animated]),
-#container .css-1hsi05:not([data-kk-hero-animated]) {
+#container .css-c271ib:not([data-kk-hero-animated]) {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
 #container .css-c271ib,
-#container .css-1hsi05 {
+#container .css-mtcgbd[data-kk-hero-row="1"] .css-c271ib {
   overflow: hidden !important;
   will-change: transform, opacity;
+}
+
+#container .css-mtcgbd[data-kk-hero-row="1"] .css-c271ib {
+  width: min(308px, 100%) !important;
+  max-width: 308px !important;
+  height: auto !important;
+  aspect-ratio: 121.004 / 59.025;
+  flex: 1 0 0 !important;
 }
 
 #container .css-c271ib[data-kk-hero-animated="left"] {
@@ -27,22 +42,18 @@
   animation: kk-hero-logo-in-left 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
 
-#container .css-1hsi05[data-kk-hero-animated="right"] {
-  visibility: visible !important;
-  animation: kk-hero-logo-in-right 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
-}
-
-#container img[data-kk-hero-logo="left"],
-#container img[data-kk-hero-logo="right"] {
+#container img[data-kk-hero-logo="left"] {
   display: block !important;
   position: static !important;
   width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
   max-width: none !important;
   min-width: 0 !important;
   transform: none !important;
+  opacity: 1 !important;
   visibility: visible !important;
   object-fit: contain !important;
+  aspect-ratio: 121.004 / 59.025;
 }
 
 /* Footer KK logo */
@@ -69,8 +80,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #container .css-c271ib[data-kk-hero-animated],
-  #container .css-1hsi05[data-kk-hero-animated] {
+  #container .css-c271ib[data-kk-hero-animated] {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

@@ -1,9 +1,7 @@
 (function () {
   "use strict";
 
-  var FOOTER_LOGO_SRC = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
-  var HERO_LEFT_SRC = "/_custom/logos/kk-portfolio-logo-left.svg?v=kk1";
-  var HERO_RIGHT_SRC = "/_custom/logos/kk-portfolio-logo-right.svg?v=kk1";
+  var KK_LOGO = "/_custom/logos/kk-portfolio-logo.svg?v=kk5";
   var LEGACY_MARKERS = [
     "607b2d562261e395e26c1c2761fb81d7ea436dde",
     "ba99bb76c42f48d5764d167f926c3d614019efb7",
@@ -17,74 +15,88 @@
   function isKkLogoImg(img) {
     if (!img || img.tagName !== "IMG") return false;
     var src = String(img.getAttribute("src") || img.src || "");
-    if (LEGACY_MARKERS.some(function (m) { return src.indexOf(m) >= 0; })) return true;
+    if (img.getAttribute("data-kk-hero-logo") === "left") return true;
+    if (img.getAttribute("data-kk-footer-logo") === "1") return true;
     if (src.indexOf("kk-portfolio-logo") >= 0) return true;
-    if (src.indexOf("sticker-kk-logo") >= 0) return true;
+    if (LEGACY_MARKERS.some(function (m) { return src.indexOf(m) >= 0; })) return true;
     return !!(img.closest(HERO_LEFT) || img.closest(HERO_RIGHT) || img.closest(FOOTER));
   }
 
-  function playHeroEntrance(slot, side) {
+  function hideHeroRightSlots(root) {
+    (root || document).querySelectorAll(HERO_RIGHT).forEach(function (slot) {
+      slot.style.setProperty("display", "none", "important");
+      slot.setAttribute("data-kk-hero-hidden", "1");
+    });
+  }
+
+  function playHeroEntrance(slot) {
     if (!slot || slot.getAttribute("data-kk-hero-animated")) return;
-    slot.setAttribute("data-kk-hero-animated", side);
+    slot.setAttribute("data-kk-hero-animated", "left");
     slot.style.removeProperty("opacity");
     slot.style.removeProperty("transform");
     slot.style.removeProperty("transition");
   }
 
-  function patchHeroImg(img, side) {
-    var targetSrc = side === "left" ? HERO_LEFT_SRC : HERO_RIGHT_SRC;
-    var already = img.getAttribute("data-kk-hero-logo") === side;
-    var src = String(img.getAttribute("src") || "");
-    var needsSrc = src.indexOf(targetSrc) < 0;
-    if (already && !needsSrc) return;
-
-    img.setAttribute("data-kk-hero-logo", side);
-    img.removeAttribute("loading");
-    img.setAttribute("alt", "");
-    if (needsSrc) img.setAttribute("src", targetSrc);
-
-    var slot = img.closest(side === "left" ? HERO_LEFT : HERO_RIGHT);
-    if (slot && !slot.getAttribute("data-kk-hero-animated")) {
-      playHeroEntrance(slot, side);
-    }
-  }
-
-  function patchFooterImg(img) {
-    if (img.getAttribute("data-kk-footer-logo") === "1") return;
-
-    img.setAttribute("data-kk-footer-logo", "1");
-    img.removeAttribute("loading");
-    img.style.opacity = "1";
-    img.style.visibility = "visible";
-    img.style.display = "block";
+  function patchHeroImg(img) {
+    hideHeroRightSlots(document);
+    if (img.closest(HERO_RIGHT)) return;
 
     var src = String(img.getAttribute("src") || "");
     if (src.indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
-      img.setAttribute("src", FOOTER_LOGO_SRC);
+      img.setAttribute("src", KK_LOGO);
     }
+    img.setAttribute("data-kk-hero-logo", "left");
+    img.removeAttribute("loading");
+    img.setAttribute("alt", "");
+
+    var row = img.closest(".css-mtcgbd");
+    if (row) row.setAttribute("data-kk-hero-row", "1");
+
+    var slot = img.closest(HERO_LEFT);
+    if (slot) playHeroEntrance(slot);
+  }
+
+  function patchFooterImg(img) {
+    if (img.getAttribute("data-kk-footer-logo") === "1") {
+      if (String(img.getAttribute("src") || "").indexOf("kk-portfolio-logo.svg?v=kk5") < 0) {
+        img.setAttribute("src", KK_LOGO);
+      }
+      return;
+    }
+
+    img.setAttribute("data-kk-footer-logo", "1");
+    img.removeAttribute("loading");
+    img.setAttribute("src", KK_LOGO);
+    img.setAttribute("alt", "");
   }
 
   function patchImg(img) {
     if (!isKkLogoImg(img)) return;
     if (img.closest(HERO_LEFT)) {
-      patchHeroImg(img, "left");
+      patchHeroImg(img);
       return;
     }
     if (img.closest(HERO_RIGHT)) {
-      patchHeroImg(img, "right");
+      hideHeroRightSlots(document);
       return;
     }
     patchFooterImg(img);
   }
 
   function scan(root) {
+    hideHeroRightSlots(root);
     (root || document).querySelectorAll("img").forEach(patchImg);
   }
 
   function boot() {
     scan(document);
     var obs = new MutationObserver(function () { scan(document); });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
+    obs.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["src"],
+    });
     [120, 600, 1500, 3200].forEach(function (delay) {
       setTimeout(function () { scan(document); }, delay);
     });

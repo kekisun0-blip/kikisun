@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/_custom/liquid-chrome.css?v=136"/>
-  <link rel="stylesheet" href="/_custom/vibe-coding.css?v=174"/>
+  <link rel="stylesheet" href="/_custom/vibe-coding.css?v=187"/>
 </head>
 <body>
   <div class="vc-bg" aria-hidden="true">
@@ -67,11 +67,6 @@
               <img src="/_custom/vibe-coding/sticker-free-tier.png?v=150" alt="" width="245" height="118" loading="lazy" draggable="false"/>
             </div>
           </figure>
-          <figure class="vc-sticker vc-sticker--s4">
-            <div class="vc-sticker__cut">
-              <img src="/_custom/vibe-coding/sticker-spark.png?v=150" alt="" width="160" height="169" loading="lazy" draggable="false"/>
-            </div>
-          </figure>
           <figure class="vc-sticker vc-sticker--s5">
             <div class="vc-sticker__cut">
               <img src="/_custom/vibe-coding/sticker-ditto.png?v=150" alt="" width="160" height="159" loading="lazy" draggable="false"/>
@@ -90,7 +85,12 @@
     <main class="vc-main" id="vc-projects">
       <div class="vc-section__inner">
         <div class="vc-main__head">
-          <h2 class="vc-section-title">Selected builds</h2>
+          <div class="vc-section-title-row">
+            <h2 class="vc-section-title">Selected builds</h2>
+            <button type="button" class="vc-insight-btn" data-vc-insight-open aria-label="AI洞察" title="AI洞察">
+              <span class="vc-insight-btn__text">AI洞察</span>
+            </button>
+          </div>
           <p class="vc-main__intro">每个项目都是一次「先跑通、再精修」的 Design Engineer 实践：用 Cursor / Codex 快速搭壳，用真实交互验证假设，再回到 Figma 或生产代码沉淀规范。</p>
         </div>
 
@@ -368,6 +368,35 @@
     </footer>
   </div>
 
+  <div class="vc-insight-modal" id="vc-insight-modal" hidden>
+    <div class="vc-insight-modal__backdrop" data-vc-insight-close tabindex="-1" aria-hidden="true"></div>
+    <div class="vc-insight-modal__card" role="dialog" aria-modal="true" aria-labelledby="vc-insight-modal-title">
+      <div class="vc-insight-modal__border" aria-hidden="true"></div>
+      <span class="vc-insight-modal__spark vc-insight-modal__spark--1" aria-hidden="true">✦</span>
+      <span class="vc-insight-modal__spark vc-insight-modal__spark--2" aria-hidden="true">✧</span>
+      <span class="vc-insight-modal__spark vc-insight-modal__spark--3" aria-hidden="true">✦</span>
+      <span class="vc-insight-modal__spark vc-insight-modal__spark--4" aria-hidden="true">·</span>
+      <button type="button" class="vc-insight-modal__close" data-vc-insight-close aria-label="关闭">×</button>
+      <header class="vc-insight-modal__head">
+        <h2 class="vc-insight-modal__title" id="vc-insight-modal-title">作者洞察 <span aria-hidden="true">✨</span></h2>
+      </header>
+      <ol class="vc-insight-modal__list">
+        <li class="vc-insight-modal__item">
+          <div class="vc-insight-modal__emoji" aria-hidden="true">📐</div>
+          <p class="vc-insight-modal__copy">炼制设计系统skill的过程中，让AI读懂设计文件很重要。（命名和整理判定规范与自然语言的互动关系）</p>
+        </li>
+        <li class="vc-insight-modal__item">
+          <div class="vc-insight-modal__emoji" aria-hidden="true">🧩</div>
+          <p class="vc-insight-modal__copy">Vibe Coding的瓶颈卡点也是机会，炼制skill应关注更多可被细化的场景，而非大而泛。（如地球贴图skill等）</p>
+        </li>
+        <li class="vc-insight-modal__item">
+          <div class="vc-insight-modal__emoji" aria-hidden="true">🎬</div>
+          <p class="vc-insight-modal__copy">AI视频制作中，画面的视觉效果可以应用更多构图的专业prompt而非依靠AI抽卡，追求氛围感而非超高清。手工添加音效效果更好。</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+
   <div class="vc-video-modal" id="vc-video-modal" hidden>
     <div class="vc-video-modal__backdrop" data-vc-video-close tabindex="-1" aria-hidden="true"></div>
     <div class="vc-video-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="vc-video-modal-title">
@@ -388,7 +417,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script src="/_custom/vibe-coding.js?v=154" defer></script>
+  <script src="/_custom/vibe-coding.js?v=158" defer></script>
   <script type="module">
     import { initLiquidChrome } from "/_custom/liquid-chrome.js?v=136";
 

@@ -28,20 +28,27 @@
       return;
     }
     var accentPart = TITLE_ACCENT.slice(0, count - plainLen);
-    var accentHtml = accentPart;
+    var accentHtml;
     if (accentPart === TITLE_ACCENT) {
-      accentHtml += '<span class="vc-title__ul">_</span>';
+      accentHtml =
+        '<span class="vc-title__line">' +
+        '<span class="vc-title__accent">' + TITLE_ACCENT + "</span>" +
+        '<span class="vc-title__ul">_</span></span>';
+    } else {
+      accentHtml = '<span class="vc-title__accent">' + accentPart + "</span>";
     }
     title.innerHTML =
       '<span class="vc-title__plain">' + TITLE_PLAIN + "</span>" +
-      '<span class="vc-title__accent">' + accentHtml + "</span>";
+      accentHtml;
   }
 
   function finishTitle(title) {
     title.classList.remove("vc-title--typing");
     title.innerHTML =
       '<span class="vc-title__plain">' + TITLE_PLAIN + "</span>" +
-      '<span class="vc-title__accent">' + TITLE_ACCENT + '<span class="vc-title__ul">_</span></span>';
+      '<span class="vc-title__line">' +
+      '<span class="vc-title__accent">' + TITLE_ACCENT + "</span>" +
+      '<span class="vc-title__ul">_</span></span>';
     title.setAttribute("data-vc-typed", "1");
   }
 
@@ -308,6 +315,44 @@
     startTitleTypewriter(title);
   }
 
+  function initInsightModal() {
+    var modal = document.getElementById("vc-insight-modal");
+    if (!modal) return;
+
+    var lastFocus = null;
+
+    function openModal(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      lastFocus = document.activeElement;
+      modal.hidden = false;
+      document.body.style.overflow = "hidden";
+      var closeBtn = modal.querySelector(".vc-insight-modal__close");
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeModal() {
+      modal.hidden = true;
+      document.body.style.overflow = "";
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    document.addEventListener("click", function (e) {
+      if (e.target.closest("[data-vc-insight-open]")) openModal(e);
+    });
+
+    modal.querySelectorAll("[data-vc-insight-close]").forEach(function (el) {
+      el.addEventListener("click", closeModal);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (modal.hidden) return;
+      if (e.key === "Escape") closeModal();
+    });
+  }
+
   function initVideoModal() {
     var modal = document.getElementById("vc-video-modal");
     var player = document.getElementById("vc-video-player");
@@ -350,6 +395,7 @@
     var shell = document.querySelector(".vc-shell");
     if (!shell) return;
 
+    initInsightModal();
     initVideoModal();
 
     if (!hasGsap) {

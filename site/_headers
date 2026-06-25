@@ -1,0 +1,21 @@
+/_assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_runtimes/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_components/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_custom/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_json/*
+  Cache-Control: public, max-age=3600
+
+/_woff/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff

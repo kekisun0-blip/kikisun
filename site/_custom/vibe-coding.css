@@ -1250,8 +1250,9 @@ a {
 }
 
 #vc-insight-modal .vc-insight-modal__item {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap;
   align-items: flex-start;
   width: 100%;
   padding: 0 0 20px;
@@ -1259,6 +1260,7 @@ a {
   border: none;
   border-bottom: 1px solid var(--vc-line-soft);
   background: transparent;
+  grid-template-columns: none;
 }
 
 #vc-insight-modal .vc-insight-modal__item:last-child {
@@ -1268,6 +1270,7 @@ a {
 }
 
 #vc-insight-modal .vc-insight-modal__emoji {
+  display: block;
   flex: 0 0 auto;
   margin: 0 0 10px;
   font-size: 28px;
@@ -1275,8 +1278,10 @@ a {
 }
 
 #vc-insight-modal .vc-insight-modal__copy {
+  display: block;
   flex: 0 0 auto;
   width: 100%;
+  max-width: 100%;
   margin: 0;
   font-size: clamp(15px, 2.35vw, 17px);
   line-height: 1.68;
